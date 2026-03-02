@@ -19,31 +19,15 @@ import anthropic
 CONFIG = {
     "categories": ["astro-ph.EP", "astro-ph.SR", "astro-ph.GA"],
     "keywords": [
-        "circumbinary",
-        "circumbinary planet",
-        "Gaia",
-        "vbroad",
-        "vsini",
-        "stellar rotation",
-        "binary star",
-        "exoplanet demographics",
-        "orbital architecture",
-        "Gaia DR4",
-        "spectroscopic binary",
-        "eclipsing binary",
-        "macroturbulence",
-        "LAMOST",
-        "rotation velocity",
+        "circumbinary", "circumbinary planet", "Gaia", "vbroad", "vsini",
+        "stellar rotation", "binary star", "exoplanet demographics",
+        "orbital architecture", "Gaia DR4", "spectroscopic binary",
+        "eclipsing binary", "macroturbulence", "LAMOST", "rotation velocity",
     ],
     "known_authors": [
-        "REDACTED",
-        "Albrecht, S",
-        "REDACTED",
-        "REDACTED",
-        "REDACTED",
-        "REDACTED",
-        "REDACTED",
-        "Nielsen",
+        "REDACTED", "Albrecht, S",
+        "REDACTED", "REDACTED", "REDACTED", "REDACTED",
+        "REDACTED", "Nielsen",
     ],
     "days_back": 5,
     "max_papers": 8,
@@ -64,7 +48,6 @@ REDACTED:
 # ─────────────────────────────────────────────────────────────
 #  ARXIV FETCHING
 # ─────────────────────────────────────────────────────────────
-
 
 def fetch_arxiv_papers(categories, days_back):
     papers = []
@@ -91,18 +74,14 @@ def fetch_arxiv_papers(categories, days_back):
 
         for entry in root.findall("atom:entry", ns):
             published_str = entry.find("atom:published", ns).text
-            published = datetime.fromisoformat(
-                published_str.replace("Z", "+00:00")
-            ).replace(tzinfo=None)
+            published = datetime.fromisoformat(published_str.replace("Z", "+00:00")).replace(tzinfo=None)
             if published < cutoff:
                 continue
 
             arxiv_id = entry.find("atom:id", ns).text.split("/abs/")[-1]
             title = entry.find("atom:title", ns).text.strip().replace("\n", " ")
             abstract = entry.find("atom:summary", ns).text.strip().replace("\n", " ")
-            authors = [
-                a.find("atom:name", ns).text for a in entry.findall("atom:author", ns)
-            ]
+            authors = [a.find("atom:name", ns).text for a in entry.findall("atom:author", ns)]
 
             known_flag = []
             for author in authors:
@@ -114,19 +93,17 @@ def fetch_arxiv_papers(categories, days_back):
             text_lower = (title + " " + abstract).lower()
             kw_hits = sum(1 for kw in CONFIG["keywords"] if kw.lower() in text_lower)
 
-            papers.append(
-                {
-                    "id": arxiv_id,
-                    "title": title,
-                    "abstract": abstract,
-                    "authors": authors,
-                    "published": published.strftime("%Y-%m-%d"),
-                    "category": category,
-                    "url": f"https://arxiv.org/abs/{arxiv_id}",
-                    "known_authors": known_flag,
-                    "keyword_hits": kw_hits,
-                }
-            )
+            papers.append({
+                "id": arxiv_id,
+                "title": title,
+                "abstract": abstract,
+                "authors": authors,
+                "published": published.strftime("%Y-%m-%d"),
+                "category": category,
+                "url": f"https://arxiv.org/abs/{arxiv_id}",
+                "known_authors": known_flag,
+                "keyword_hits": kw_hits,
+            })
 
     seen = set()
     unique = []
@@ -141,16 +118,13 @@ def fetch_arxiv_papers(categories, days_back):
 
 def pre_filter(papers):
     filtered = [p for p in papers if p["keyword_hits"] > 0 or p["known_authors"]]
-    filtered.sort(
-        key=lambda p: len(p["known_authors"]) * 5 + p["keyword_hits"], reverse=True
-    )
+    filtered.sort(key=lambda p: (len(p["known_authors"]) * 5 + p["keyword_hits"]), reverse=True)
     return filtered[:30]
 
 
 # ─────────────────────────────────────────────────────────────
 #  CLAUDE ANALYSIS
 # ─────────────────────────────────────────────────────────────
-
 
 def analyse_papers(papers):
     if not papers:
@@ -160,7 +134,7 @@ def analyse_papers(papers):
     analysed = []
 
     for i, paper in enumerate(papers):
-        print(f"  Analysing {i + 1}/{len(papers)}: {paper['title'][:60]}...")
+        print(f"  Analysing {i+1}/{len(papers)}: {paper['title'][:60]}...")
 
         prompt = f"""You are helping curate a personalised arXiv digest for an astronomer.
 
@@ -168,10 +142,10 @@ RESEARCHER CONTEXT:
 {SILKE_CONTEXT}
 
 PAPER:
-Title: {paper["title"]}
-Authors: {", ".join(paper["authors"][:8])}
-Category: {paper["category"]}
-Abstract: {paper["abstract"]}
+Title: {paper['title']}
+Authors: {', '.join(paper['authors'][:8])}
+Category: {paper['category']}
+Abstract: {paper['abstract']}
 
 Respond with ONLY a valid JSON object (no markdown, no backticks):
 {{
@@ -194,38 +168,32 @@ Score: 10=circumbinary/Gaia vbroad, 8-9=stellar rotation/binaries, 6-7=related e
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=600,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": prompt}]
             )
             analysis = json.loads(response.content[0].text.strip())
             paper.update(analysis)
             analysed.append(paper)
         except Exception as e:
             print(f"    Error: {e}")
-            paper.update(
-                {
-                    "relevance_score": paper["keyword_hits"],
-                    "plain_summary": paper["abstract"][:300] + "...",
-                    "why_interesting": "Matched your keywords.",
-                    "emoji": "📄",
-                    "highlight_phrase": paper["title"][:50],
-                    "kw_tags": [],
-                    "method_tags": [],
-                    "is_new_catalog": False,
-                    "cite_worthy": False,
-                    "new_result": None,
-                }
-            )
+            paper.update({
+                "relevance_score": paper["keyword_hits"],
+                "plain_summary": paper["abstract"][:300] + "...",
+                "why_interesting": "Matched your keywords.",
+                "emoji": "📄",
+                "highlight_phrase": paper["title"][:50],
+                "kw_tags": [], "method_tags": [],
+                "is_new_catalog": False, "cite_worthy": False, "new_result": None,
+            })
             analysed.append(paper)
 
     result = [p for p in analysed if p.get("relevance_score", 0) >= CONFIG["min_score"]]
     result.sort(key=lambda p: p.get("relevance_score", 0), reverse=True)
-    return result[: CONFIG["max_papers"]]
+    return result[:CONFIG["max_papers"]]
 
 
 # ─────────────────────────────────────────────────────────────
 #  HTML RENDERING
 # ─────────────────────────────────────────────────────────────
-
 
 def render_html(papers, date_str):
 
@@ -234,16 +202,11 @@ def render_html(papers, date_str):
         return "".join(["●" if i < filled else "○" for i in range(10)])
 
     def accent_color(score):
-        if score >= 9:
-            return "#4ade80"
-        if score >= 8:
-            return "#63b3ed"
-        if score >= 7:
-            return "#ecc94b"
-        if score >= 6:
-            return "#f6ad55"
-        if score >= 5:
-            return "#b794f4"
+        if score >= 9: return "#4ade80"
+        if score >= 8: return "#63b3ed"
+        if score >= 7: return "#ecc94b"
+        if score >= 6: return "#f6ad55"
+        if score >= 5: return "#b794f4"
         return "#718096"
 
     def build_tags(p):
@@ -268,10 +231,7 @@ def render_html(papers, date_str):
         return "\n".join(tags)
 
     def build_method_tags(p):
-        return "\n".join(
-            f'<span class="tag tag-method">{t}</span>'
-            for t in (p.get("method_tags") or [])
-        )
+        return "\n".join(f'<span class="tag tag-method">{t}</span>' for t in (p.get("method_tags") or []))
 
     # Highlights strip — top 2-4 papers
     highlights = [p for p in papers if p.get("relevance_score", 0) >= 7][:4]
@@ -280,27 +240,22 @@ def render_html(papers, date_str):
         score = p.get("relevance_score", 5)
         hc = accent_color(score)
         htags = []
-        if score >= 9:
-            htags.append('<span class="hc-tag hot">🔥 must-read</span>')
-        if score >= 8:
-            htags.append('<span class="hc-tag thesis">📌 thesis</span>')
-        if p.get("known_authors"):
-            htags.append('<span class="hc-tag gaia">👋 known author</span>')
+        if score >= 9: htags.append('<span class="hc-tag hot">🔥 must-read</span>')
+        if score >= 8: htags.append('<span class="hc-tag thesis">📌 thesis</span>')
+        if p.get("known_authors"): htags.append('<span class="hc-tag gaia">👋 known author</span>')
         for kw in (p.get("kw_tags") or [])[:2]:
             htags.append(f'<span class="hc-tag gaia">{kw}</span>')
-        if p.get("is_new_catalog"):
-            htags.append('<span class="hc-tag cat">📦 catalog</span>')
-        if p.get("cite_worthy"):
-            htags.append('<span class="hc-tag cite">📎 cite this</span>')
+        if p.get("is_new_catalog"): htags.append('<span class="hc-tag cat">📦 catalog</span>')
+        if p.get("cite_worthy"): htags.append('<span class="hc-tag cite">📎 cite this</span>')
 
         highlight_cards += f"""
-      <a class="highlight-card" href="{p["url"]}" style="--hc:{hc}">
+      <a class="highlight-card" href="{p['url']}" style="--hc:{hc}">
         <div class="hc-top">
-          <div class="hc-tags">{"".join(htags[:3])}</div>
-          <span class="hc-emoji">{p.get("emoji", "🔭")}</span>
+          <div class="hc-tags">{''.join(htags[:3])}</div>
+          <span class="hc-emoji">{p.get('emoji','🔭')}</span>
         </div>
-        <div class="hc-headline">{p.get("highlight_phrase", "")}</div>
-        <div class="hc-blurb">{p.get("plain_summary", "")[:120]}…</div>
+        <div class="hc-headline">{p.get('highlight_phrase','')}</div>
+        <div class="hc-blurb">{p.get('plain_summary','')[:120]}…</div>
         <div class="hc-score">
           <span class="hc-score-num">{score}</span>
           <span style="color:#4a5568;font-size:12px">/10</span>
@@ -323,9 +278,9 @@ def render_html(papers, date_str):
         ac = accent_color(score)
         authors_display = ", ".join(p["authors"][:5])
         if len(p["authors"]) > 5:
-            authors_display += f" +{len(p['authors']) - 5} more"
-        top_pick = " top-pick" if i == 0 else ""
-        top_label = '<div class="top-pick-label">⭑ Top pick</div>' if i == 0 else ""
+            authors_display += f" +{len(p['authors'])-5} more"
+        top_pick = ' top-pick' if i == 0 else ''
+        top_label = '<div class="top-pick-label">⭑ Top pick</div>' if i == 0 else ''
 
         cards_html += f"""
     <div class="paper-card{top_pick}" style="--accent:{ac}">
@@ -333,38 +288,36 @@ def render_html(papers, date_str):
       <div class="card-header">
         <div class="card-meta">{build_tags(p)}</div>
         <div class="score-area">
-          <span class="emoji-big">{p.get("emoji", "🔭")}</span>
+          <span class="emoji-big">{p.get('emoji','🔭')}</span>
           <div>
             <span class="score-num">{score}<span class="score-denom">/10</span></span>
             <div class="score-bar">{score_bar(score)}</div>
           </div>
         </div>
       </div>
-      <h2 class="highlight-phrase">{p.get("highlight_phrase", "")}</h2>
-      <h3 class="paper-title"><a href="{p["url"]}">{p["title"]}</a></h3>
+      <h2 class="highlight-phrase">{p.get('highlight_phrase','')}</h2>
+      <h3 class="paper-title"><a href="{p['url']}">{p['title']}</a></h3>
       <p class="authors">{authors_display}</p>
       <div class="summary-block">
         <div class="summary-section">
           <div class="section-label">🧪 What they did</div>
-          <p>{p.get("plain_summary", "")}</p>
+          <p>{p.get('plain_summary','')}</p>
         </div>
         <div class="summary-section why-section">
           <div class="section-label">⭐ Why it matters to you</div>
-          <p>{p.get("why_interesting", "")}</p>
+          <p>{p.get('why_interesting','')}</p>
         </div>
       </div>
       <div class="card-footer">
         <div class="card-topic-tags">{build_method_tags(p)}</div>
-        <a href="{p["url"]}" class="read-btn">Read paper →</a>
+        <a href="{p['url']}" class="read-btn">Read paper →</a>
       </div>
     </div>"""
 
     if not papers:
         cards_html = '<div class="no-papers">No highly relevant papers this period. The cosmos is quiet. ☕</div>'
 
-    avg_score = round(
-        sum(p.get("relevance_score", 0) for p in papers) / max(len(papers), 1), 1
-    )
+    avg_score = round(sum(p.get("relevance_score",0) for p in papers) / max(len(papers),1), 1)
     known_count = sum(1 for p in papers if p.get("known_authors"))
 
     return f"""<!DOCTYPE html>
@@ -476,7 +429,7 @@ def render_html(papers, date_str):
       <div class="stat"><span class="stat-num">{known_count}</span><span class="stat-label">familiar authors</span></div>
       <div class="stat"><span class="stat-num">{avg_score}</span><span class="stat-label">avg relevance</span></div>
     </div>
-    <div class="header-subtitle">Monitoring astro-ph.EP · astro-ph.SR · astro-ph.GA · last {CONFIG["days_back"]} days · threshold ≥ {CONFIG["min_score"]}/10</div>
+    <div class="header-subtitle">Monitoring astro-ph.EP · astro-ph.SR · astro-ph.GA · last {CONFIG['days_back']} days · threshold ≥ {CONFIG['min_score']}/10</div>
   </div>
   {highlights_html}
   <div class="section-divider">All papers this edition · {len(papers)} total</div>
@@ -498,25 +451,25 @@ def render_html(papers, date_str):
 #  EMAIL SENDING — Resend API
 # ─────────────────────────────────────────────────────────────
 
-
 def send_email(html, paper_count, date_str):
+    # Always save HTML artifact — useful for debugging and as a backup
+    with open("digest_output.html", "w") as f:
+        f.write(html)
+    print("💾 Saved digest_output.html")
+
     recipient = CONFIG["recipient_email"]
     api_key = os.environ.get("RESEND_API_KEY", "")
 
     if not all([recipient, api_key]):
-        print("⚠️  Credentials missing. Saving to digest_output.html instead.")
-        with open("digest_output.html", "w") as f:
-            f.write(html)
+        print("⚠️  RESEND_API_KEY or RECIPIENT_EMAIL not set — skipping email send.")
         return
 
-    payload = json.dumps(
-        {
-            "from": "Science News for Silke <onboarding@resend.dev>",
-            "to": [recipient],
-            "subject": f"🔭 Science News for Silke — {paper_count} papers · {date_str}",
-            "html": html,
-        }
-    ).encode()
+    payload = json.dumps({
+        "from": "Science News for Silke <onboarding@resend.dev>",
+        "to": [recipient],
+        "subject": f"🔭 Science News for Silke — {paper_count} papers · {date_str}",
+        "html": html,
+    }).encode()
 
     req = urllib.request.Request(
         "https://api.resend.com/emails",
@@ -525,7 +478,7 @@ def send_email(html, paper_count, date_str):
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
-        method="POST",
+        method="POST"
     )
     try:
         with urllib.request.urlopen(req) as resp:
@@ -533,14 +486,13 @@ def send_email(html, paper_count, date_str):
             print(f"✅ Email sent to {recipient} (id: {result.get('id')})")
     except urllib.error.HTTPError as e:
         body = e.read().decode()
-        print(f"❌ Resend error {e.code}: {body}")
-        raise
+        print(f"❌ Resend API error {e.code}: {body}")
+        print("📋 Digest was saved as digest_output.html artifact — check Actions artifacts to download it.")
 
 
 # ─────────────────────────────────────────────────────────────
 #  MAIN
 # ─────────────────────────────────────────────────────────────
-
 
 def main():
     date_str = datetime.utcnow().strftime("%B %d, %Y")
@@ -569,3 +521,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

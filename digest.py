@@ -4,7 +4,7 @@ Fetches new arXiv papers, scores them with AI (Claude → Gemini → keyword fal
 and sends a beautiful HTML digest via email.
 
 Configuration lives in config.yaml — edit that file to update keywords, colleagues, etc.
-Use the setup wizard at arxiv-digest.streamlit.app to generate your config.
+Use the setup wizard at arxiv-digest-setup.streamlit.app to generate your config.
 
 Created by Silke S. Dainese · dainese@phys.au.dk · silkedainese.github.io
 """
@@ -811,7 +811,7 @@ def _render_footer(config: dict[str, Any], scoring_method: str) -> str:
     tagline_line = f'<em>"{tagline}"</em>' if tagline else ""
 
     # ── Self-service links ──
-    setup_url = "https://arxiv-digest.streamlit.app"
+    setup_url = "https://arxiv-digest-setup.streamlit.app"
     link_style = f"color:{PINE};text-decoration:none"
     service_links: list[str] = []
 

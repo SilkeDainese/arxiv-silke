@@ -16,7 +16,7 @@ If you have suggestions, open an issue or email me. I cannot promise to implemen
 
 ### 1. Generate your config
 
-Visit **[arxiv-digest.streamlit.app](https://arxiv-digest.streamlit.app)** and fill in:
+Visit **[arxiv-digest-setup.streamlit.app](https://arxiv-digest-setup.streamlit.app)** and fill in:
 - Your name and research description
 - Keywords with importance weights (1-10)
 - arXiv categories to monitor

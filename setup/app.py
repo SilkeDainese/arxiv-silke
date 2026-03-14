@@ -471,6 +471,61 @@ def suggest_keywords_from_context(text: str, orcid_keywords: dict | None = None)
 
 
 # ─────────────────────────────────────────────────────────────
+#  Profile import helpers
+# ─────────────────────────────────────────────────────────────
+
+def _apply_orcid_keywords(keywords: dict, orcid_url: str = "") -> None:
+    """Merge ORCID keywords into session state and auto-draft description."""
+    if keywords:
+        merged = dict(st.session_state.keywords)
+        merged.update(keywords)
+        st.session_state.keywords = merged
+        if not st.session_state.research_description:
+            api_key = _get_anthropic_key()
+            if api_key and _ANTHROPIC_AVAILABLE:
+                st.session_state.research_description = draft_research_description(merged)
+    st.session_state.pure_scanned = True
+    if orcid_url:
+        st.session_state.pure_confirmed_url = orcid_url
+
+
+def _apply_pure_keywords(keywords: dict | None, coauthors: list | None) -> None:
+    """Merge Pure-scraped keywords and co-authors into session state."""
+    if keywords:
+        merged = dict(st.session_state.keywords)
+        merged.update(keywords)
+        st.session_state.keywords = merged
+    if coauthors:
+        for name in coauthors[:15]:
+            parts = name.split()
+            if len(parts) >= 2:
+                match_pattern = f"{parts[-1]}, {parts[0][0]}"
+                if not any(c["name"] == name for c in st.session_state.colleagues_people):
+                    st.session_state.colleagues_people.append({"name": name, "match": [match_pattern]})
+    st.session_state.pure_scanned = True
+
+
+def _import_profile(result: dict) -> None:
+    """Full import from a single ORCID search result: fill profile + extract keywords."""
+    # Pre-fill profile fields
+    st.session_state.profile_name = result["name"]
+    if result.get("department"):
+        st.session_state.profile_institution = result["department"]
+    st.session_state.pure_confirmed_url = result["url"]
+
+    # Extract keywords from publications
+    orcid_id = result["url"].rstrip("/").split("/")[-1]
+    keywords, _, error = fetch_orcid_works(orcid_id)
+    if not error and keywords:
+        _apply_orcid_keywords(keywords, orcid_url=result["url"])
+    else:
+        st.session_state.pure_scanned = True
+        st.session_state.pure_confirmed_url = result["url"]
+
+    st.rerun()
+
+
+# ─────────────────────────────────────────────────────────────
 #  Session state defaults
 # ─────────────────────────────────────────────────────────────
 
@@ -533,148 +588,88 @@ st.divider()
 #  Section 1: Profile Scan (optional)
 # ─────────────────────────────────────────────────────────────
 
-st.markdown("## 1. Profile Scan (optional)")
-st.markdown(
-    "Search ORCID to find your profile — we'll pre-fill your name, institution, "
-    "extract publication keywords, and draft your research description automatically."
-)
+st.markdown("## 1. Find Your Profile")
+st.markdown("Type your name — we'll find your ORCID profile, extract your publications, and fill in everything automatically.")
 
 if "pure_search_results" not in st.session_state:
     st.session_state.pure_search_results = []
 if "pure_confirmed_url" not in st.session_state:
     st.session_state.pure_confirmed_url = ""
 
-if ai_assist:
-    # ── AI mode: search by name via ORCID ──
-    pure_search_name = st.text_input(
-        "Search by name",
-        placeholder="Jane Smith",
-        key="pure_search_name",
-    )
+# ── Already imported — show summary and allow reset ──
+if st.session_state.pure_scanned:
+    st.success(f"✓ Profile imported from {st.session_state.pure_confirmed_url}")
+    if st.button("↺ Search again", type="secondary"):
+        st.session_state.pure_scanned = False
+        st.session_state.pure_confirmed_url = ""
+        st.session_state.pure_search_results = []
+        st.rerun()
 
-    if pure_search_name and st.button("🔍 Search ORCID", type="primary"):
+else:
+    # ── Name search input ──
+    col_input, col_btn = st.columns([4, 1])
+    with col_input:
+        pure_search_name = st.text_input(
+            "Your name",
+            placeholder="Silke Dainese",
+            key="pure_search_name",
+            label_visibility="collapsed",
+        )
+    with col_btn:
+        search_clicked = st.button("🔍 Find", type="primary", use_container_width=True)
+
+    if pure_search_name and search_clicked:
         with st.spinner(f"Searching for '{pure_search_name}'..."):
             st.session_state.pure_search_results = search_pure_profiles(pure_search_name)
             st.session_state.pure_confirmed_url = ""
-
         if not st.session_state.pure_search_results:
-            st.warning(
-                "No ORCID profiles found. "
-                "Try searching with just your last name, or a shorter version of your name."
-            )
+            st.warning("No profile found. Try just your last name.")
 
-    # Show search results — clicking "Use this" pre-fills profile + sets ORCID URL
-    if st.session_state.pure_search_results:
-        st.markdown("**Found on ORCID:**")
+    # ── Multiple results: pick one ──
+    if st.session_state.pure_search_results and len(st.session_state.pure_search_results) > 1:
+        st.markdown("**More than one match — which is you?**")
         for result in st.session_state.pure_search_results:
             dept_label = f" — {result['department']}" if result['department'] else ""
             col_name, col_btn = st.columns([5, 1])
             with col_name:
-                st.markdown(f"{result['name']}{dept_label} ([ORCID]({result['url']}))")
+                st.markdown(f"{result['name']}{dept_label}")
             with col_btn:
-                if st.button("Use this", key=f"select_orcid_{result['url']}"):
-                    st.session_state.pure_confirmed_url = result["url"]
-                    st.session_state.pure_scanned = False
-                    # Pre-fill profile fields from ORCID result
-                    st.session_state.profile_name = result["name"]
-                    if result["department"]:
-                        st.session_state.profile_institution = result["department"]
-                    st.rerun()
+                if st.button("That's me", key=f"pick_{result['url']}", use_container_width=True):
+                    _import_profile(result)
 
-    # Manual Pure URL entry for keyword/co-author extraction
-    with st.expander("Paste your Pure profile URL instead"):
-        pure_url_manual = st.text_input(
-            "Pure profile URL",
-            placeholder="https://pure.au.dk/portal/en/persons/your-name",
-            key="pure_url_manual",
+    # ── Single result: auto-import immediately ──
+    elif st.session_state.pure_search_results and len(st.session_state.pure_search_results) == 1:
+        result = st.session_state.pure_search_results[0]
+        with st.spinner(f"Found {result['name']} — importing profile..."):
+            _import_profile(result)
+
+    # ── Manual fallback: Pure or ORCID URL ──
+    with st.expander("Paste a profile URL instead (Pure or ORCID)"):
+        manual_url = st.text_input(
+            "Profile URL",
+            placeholder="https://orcid.org/0000-0000-0000-0000  or  https://pure.au.dk/portal/en/persons/...",
+            key="manual_profile_url",
         )
-        if pure_url_manual:
-            st.session_state.pure_confirmed_url = pure_url_manual
-
-else:
-    # ── Manual mode: just URL ──
-    pure_url_direct = st.text_input(
-        "Pure profile URL (optional)",
-        placeholder="https://pure.au.dk/portal/en/persons/your-name",
-        help="Works with most Pure research portal instances",
-        key="pure_url_direct",
-    )
-    if pure_url_direct:
-        st.session_state.pure_confirmed_url = pure_url_direct
-
-# ── Scan the confirmed profile ──
-_confirmed = st.session_state.pure_confirmed_url
-_is_orcid_url = _confirmed.startswith("https://orcid.org/")
-
-if _confirmed and _is_orcid_url and not st.session_state.pure_scanned:
-    orcid_id = _confirmed.rstrip("/").split("/")[-1]
-    st.info(f"ORCID profile selected: `{orcid_id}`")
-    if st.button("📥 Extract keywords from ORCID", type="primary"):
-        with st.spinner("Fetching publications from ORCID..."):
-            keywords, _, error = fetch_orcid_works(orcid_id)
-
-        if error:
-            st.error(f"Could not fetch publications: {error}")
-            st.info("No worries — you can add keywords manually below.")
-        else:
-            st.session_state.pure_scanned = True
-            if keywords:
-                merged = dict(st.session_state.keywords)
-                merged.update(keywords)
-                st.session_state.keywords = merged
-                # Auto-draft research description if not already written
-                if not st.session_state.research_description and _get_anthropic_key() and _ANTHROPIC_AVAILABLE:
-                    with st.spinner("Drafting your research description..."):
-                        st.session_state.research_description = draft_research_description(merged)
-                st.success(
-                    f"Found {len(keywords)} keywords from your ORCID publications! "
-                    "Your research description has been drafted in section 3 — edit it as needed."
-                    if st.session_state.research_description
-                    else f"Found {len(keywords)} keywords. Fill in section 3 to score them."
-                )
-            st.rerun()
-
-elif _confirmed and _is_orcid_url and st.session_state.pure_scanned:
-    st.success(f"ORCID profile scanned: {_confirmed}")
-
-elif _confirmed and not st.session_state.pure_scanned:
-    st.info(f"Profile: `{_confirmed}`")
-    if st.button("📥 Extract keywords & co-authors", type="primary"):
-        with st.spinner("Scanning profile..."):
-            keywords, coauthors, error = scrape_pure_profile(_confirmed)
-
-        if error:
-            if "403" in str(error) or "Forbidden" in str(error):
-                st.error("Pure portal is Cloudflare-protected — automated access is blocked.")
-                st.info(
-                    "Try the **name search above** instead: it uses the ORCID API which works "
-                    "reliably. Search for just your last name if your full name isn't found."
-                )
+        if manual_url and st.button("📥 Import from URL", type="primary"):
+            if manual_url.startswith("https://orcid.org/"):
+                orcid_id = manual_url.rstrip("/").split("/")[-1]
+                with st.spinner("Fetching from ORCID..."):
+                    keywords, _, error = fetch_orcid_works(orcid_id)
+                if error:
+                    st.error(f"Could not fetch: {error}")
+                else:
+                    _apply_orcid_keywords(keywords, orcid_url=manual_url)
             else:
-                st.error(f"Could not scan profile: {error}")
-                st.info("No worries — you can add keywords manually below.")
-        else:
-            st.session_state.pure_scanned = True
-            if keywords:
-                merged = dict(st.session_state.keywords)
-                merged.update(keywords)
-                st.session_state.keywords = merged
-                st.success(f"Found {len(keywords)} keywords from your publications!")
-            if coauthors:
-                for name in coauthors[:15]:
-                    parts = name.split()
-                    if len(parts) >= 2:
-                        match_pattern = f"{parts[-1]}, {parts[0][0]}"
-                        if not any(c["name"] == name for c in st.session_state.colleagues_people):
-                            st.session_state.colleagues_people.append({
-                                "name": name,
-                                "match": [match_pattern],
-                            })
-                st.success(f"Found {len(coauthors)} co-authors!")
-            st.rerun()
-
-elif st.session_state.pure_scanned:
-    st.success(f"Profile scanned: {st.session_state.pure_confirmed_url}")
+                with st.spinner("Scanning profile page..."):
+                    keywords, coauthors, error = scrape_pure_profile(manual_url)
+                if error:
+                    if "403" in str(error) or "Forbidden" in str(error):
+                        st.error("Pure portal is Cloudflare-protected.")
+                        st.info("Use name search above instead — it uses ORCID which works reliably.")
+                    else:
+                        st.error(f"Could not scan: {error}")
+                else:
+                    _apply_pure_keywords(keywords, coauthors)
 
 st.divider()
 
@@ -751,27 +746,45 @@ research_context = st.text_area(
     key="research_description",
 )
 
-# ── AI suggestions trigger ──
+# ── AI suggestions: auto-run if description was auto-drafted, else show button ──
 if ai_assist and research_context and len(research_context) > 30:
     _has_orcid_kws = bool(st.session_state.keywords)
     _api_available = bool(_get_anthropic_key() and _ANTHROPIC_AVAILABLE)
-    _btn_label = (
-        "🤖 Suggest categories & score keywords with AI"
-        if _api_available
-        else "🤖 Suggest categories & keywords from my description"
-    )
-    if st.button(_btn_label, type="primary"):
-        st.session_state.ai_suggested_cats = suggest_categories(research_context)
-        st.session_state.ai_suggested_kws = suggest_keywords_from_context(
-            research_context,
-            orcid_keywords=st.session_state.keywords if _has_orcid_kws else None,
+    _cats_already_suggested = bool(st.session_state.ai_suggested_cats)
+
+    # Auto-trigger when profile was imported and description was drafted automatically
+    _auto_trigger = st.session_state.pure_scanned and not _cats_already_suggested
+    if _auto_trigger:
+        with st.spinner("Suggesting categories and scoring keywords..."):
+            st.session_state.ai_suggested_cats = suggest_categories(research_context)
+            st.session_state.ai_suggested_kws = suggest_keywords_from_context(
+                research_context,
+                orcid_keywords=st.session_state.keywords if _has_orcid_kws else None,
+            )
+            if _api_available and _has_orcid_kws:
+                st.session_state.keywords = {
+                    k: v for k, v in st.session_state.ai_suggested_kws.items()
+                    if k in st.session_state.keywords
+                }
+        st.rerun()
+    else:
+        _btn_label = (
+            "🤖 Re-score categories & keywords"
+            if _cats_already_suggested
+            else ("🤖 Suggest categories & score keywords" if _api_available
+                  else "🤖 Suggest categories & keywords")
         )
-        if _api_available and _has_orcid_kws:
-            # Replace the raw frequency-based ORCID weights with AI-scored ones
-            st.session_state.keywords = {
-                k: v for k, v in st.session_state.ai_suggested_kws.items()
-                if k in st.session_state.keywords
-            }
+        if st.button(_btn_label, type="secondary" if _cats_already_suggested else "primary"):
+            st.session_state.ai_suggested_cats = suggest_categories(research_context)
+            st.session_state.ai_suggested_kws = suggest_keywords_from_context(
+                research_context,
+                orcid_keywords=st.session_state.keywords if _has_orcid_kws else None,
+            )
+            if _api_available and _has_orcid_kws:
+                st.session_state.keywords = {
+                    k: v for k, v in st.session_state.ai_suggested_kws.items()
+                    if k in st.session_state.keywords
+                }
 
     if st.session_state.ai_suggested_cats:
         st.success(f"Suggested {len(st.session_state.ai_suggested_cats)} categories and {len(st.session_state.ai_suggested_kws)} keywords — review them below.")

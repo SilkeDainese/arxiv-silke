@@ -31,7 +31,7 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from brand import PINE, GOLD, CARD_BORDER, WARM_GREY
-from pure_scraper import fetch_orcid_works, scrape_pure_profile, search_pure_profiles
+from pure_scraper import fetch_orcid_person, fetch_orcid_works, find_au_colleagues, scrape_pure_profile, search_pure_profiles
 
 # ─────────────────────────────────────────────────────────────
 #  Page config
@@ -386,6 +386,21 @@ def draft_research_description(keywords: dict[str, int]) -> str:
     return result if result else f"My research focuses on {', '.join(top_keywords[:5])}."
 
 
+def _summarise_research(titles: list[str]) -> str:
+    """Generate a first-person research summary from publication titles using AI."""
+    sample = titles[:30]  # Cap to avoid token limits
+    titles_block = "\n".join(f"- {t}" for t in sample)
+    prompt = (
+        "Here are publication titles from a researcher's ORCID profile:\n"
+        f"{titles_block}\n\n"
+        "Write a 3-4 sentence research description in first person (starting with 'I') "
+        "that captures what this researcher works on. Be specific about methods, objects, "
+        "or phenomena — avoid generic filler. Return only the description, no other text."
+    )
+    result = _call_ai(prompt, max_tokens=200)
+    return result or ""
+
+
 def _get_gemini_key() -> str | None:
     """Return Gemini API key: session state → secrets → env → None."""
     user_key = st.session_state.get("user_gemini_key", "").strip()
@@ -553,7 +568,7 @@ def _import_profile(result: dict) -> None:
 
     # Extract keywords from publications
     orcid_id = result["url"].rstrip("/").split("/")[-1]
-    keywords, _, error = fetch_orcid_works(orcid_id)
+    keywords, _, _coauthors, error = fetch_orcid_works(orcid_id)
     if not error and keywords:
         _apply_orcid_keywords(keywords, orcid_url=result["url"])
     else:
@@ -612,44 +627,45 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Optional API key + AI assist toggle ──
-with st.expander("✨ Enable AI features (optional)"):
-    st.markdown(
-        "Add an API key to unlock AI-powered keyword scoring and auto-drafted research descriptions. "
-        "Your key is only used during this session and never stored."
-    )
-    col_g, col_a = st.columns(2)
-    with col_g:
-        st.markdown("**Gemini** — free tier, no credit card")
-        st.text_input(
-            "Gemini API key",
-            type="password",
-            placeholder="AIza...",
-            key="user_gemini_key",
-            label_visibility="collapsed",
-            help="Get a free key at aistudio.google.com",
-        )
-        st.caption("[Get a free key →](https://aistudio.google.com/app/apikey)")
-    with col_a:
-        st.markdown("**Anthropic** — alternative")
-        st.text_input(
-            "Anthropic API key",
-            type="password",
-            placeholder="sk-ant-...",
-            key="user_anthropic_key",
-            label_visibility="collapsed",
-            help="Get a key at console.anthropic.com",
-        )
-        st.caption("[Get a key →](https://console.anthropic.com/settings/keys)")
-    if _ai_available():
-        provider = "Gemini" if (_get_gemini_key() and _GEMINI_AVAILABLE) else "Anthropic"
-        st.success(f"AI features enabled via {provider}.")
-
-ai_assist = st.toggle(
-    "✨ AI-assisted setup",
-    value=True,
-    help="When on, we'll suggest arXiv categories and keywords based on your research description. Turn off to pick everything manually.",
+# ── Required AI setup ──
+st.markdown("## Choose your AI")
+st.markdown(
+    "AI is used throughout — for finding your profile, suggesting keywords, and scoring papers in your daily digest. "
+    "Your key is only used during this session and never stored."
 )
+
+col_g, col_a = st.columns(2)
+with col_g:
+    st.markdown("**Gemini** — free tier, no credit card")
+    st.text_input(
+        "Gemini API key",
+        type="password",
+        placeholder="AIza...",
+        key="user_gemini_key",
+        label_visibility="collapsed",
+        help="Get a free key at aistudio.google.com",
+    )
+    st.caption("[Get a free key →](https://aistudio.google.com/app/apikey)")
+with col_a:
+    st.markdown("**Anthropic** — Claude")
+    st.text_input(
+        "Anthropic API key",
+        type="password",
+        placeholder="sk-ant-...",
+        key="user_anthropic_key",
+        label_visibility="collapsed",
+        help="Get a key at console.anthropic.com",
+    )
+    st.caption("[Get a key →](https://console.anthropic.com/settings/keys)")
+
+if _ai_available():
+    provider = "Gemini" if (_get_gemini_key() and _GEMINI_AVAILABLE) else "Anthropic"
+    st.success(f"AI ready — using {provider}.")
+else:
+    st.warning("Enter an API key above to continue. AI is required for profile search and paper scoring.")
+    st.stop()
+
+ai_assist = True  # AI is always on when we reach this point
 
 st.divider()
 
@@ -658,96 +674,165 @@ st.divider()
 #  Section 1: Profile Scan (optional)
 # ─────────────────────────────────────────────────────────────
 
-st.markdown("## 1. Find Your Profile")
-st.markdown("Type your name — we'll find your ORCID profile, extract your publications, and fill in everything automatically.")
+st.markdown("## 1. Your ORCID")
+st.markdown("Enter your ORCID ID — we'll pull your profile and publications automatically.")
 
-if "pure_search_results" not in st.session_state:
-    st.session_state.pure_search_results = []
+_ORCID_ID_RE = re.compile(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
+
 if "pure_confirmed_url" not in st.session_state:
     st.session_state.pure_confirmed_url = ""
+if "orcid_preview" not in st.session_state:
+    st.session_state.orcid_preview = None  # dict with name/institution/orcid_url/keywords when pending
 
-# ── Already imported — show summary and allow reset ──
+def _commit_preview() -> None:
+    """Write the staged orcid_preview into session state and mark as scanned."""
+    p = st.session_state.orcid_preview
+    if not p:
+        return
+    st.session_state.profile_name = p["name"]
+    st.session_state.profile_institution = p["institution"]
+    st.session_state.pure_confirmed_url = p["orcid_url"]
+
+    if p["keywords"]:
+        merged = dict(st.session_state.keywords)
+        merged.update(p["keywords"])
+        st.session_state.keywords = merged
+
+    # Research description: prefer the AI summary from titles; fall back to keywords
+    if p.get("research_summary") and not st.session_state.research_description:
+        st.session_state.research_description = p["research_summary"]
+    elif p["keywords"] and not st.session_state.research_description:
+        st.session_state.research_description = draft_research_description(p["keywords"])
+
+    # Add confirmed AU colleagues
+    for name in p.get("selected_colleagues", []):
+        parts = name.split()
+        if len(parts) >= 2:
+            match_pattern = f"{parts[-1]}, {parts[0][0]}"
+        else:
+            match_pattern = name
+        if not any(c["name"] == name for c in st.session_state.colleagues_people):
+            st.session_state.colleagues_people.append({"name": name, "match": [match_pattern]})
+
+    st.session_state.pure_scanned = True
+    st.session_state.orcid_preview = None
+
+
+# ── Already confirmed — show summary and allow reset ──
 if st.session_state.pure_scanned:
-    st.success(f"✓ Profile imported from {st.session_state.pure_confirmed_url}")
-    if st.button("↺ Search again", type="secondary"):
+    st.success(f"✓ Profile loaded from {st.session_state.pure_confirmed_url}")
+    if st.button("↺ Use a different ORCID", type="secondary"):
         st.session_state.pure_scanned = False
         st.session_state.pure_confirmed_url = ""
-        st.session_state.pure_search_results = []
+        st.session_state.orcid_preview = None
         st.rerun()
 
 else:
-    # ── Name + institution search ──
-    col_name, col_inst, col_btn = st.columns([3, 3, 1])
-    with col_name:
-        pure_search_name = st.text_input(
-            "Your name",
-            placeholder="Jane Smith",
-            key="pure_search_name",
-            label_visibility="collapsed",
-        )
-    with col_inst:
-        pure_search_inst = st.text_input(
-            "University (optional)",
-            value="Aarhus University",
-            key="pure_search_inst",
+    # ── ORCID input ──
+    col_input, col_btn = st.columns([5, 1])
+    with col_input:
+        orcid_input = st.text_input(
+            "ORCID",
+            placeholder="0000-0001-2345-6789  or  https://orcid.org/0000-0001-2345-6789",
+            key="orcid_input_field",
             label_visibility="collapsed",
         )
     with col_btn:
-        search_clicked = st.button("🔍 Find", type="primary", use_container_width=True)
+        fetch_clicked = st.button("🔍 Fetch", type="primary", use_container_width=True)
 
-    if pure_search_name and search_clicked:
-        with st.spinner(f"Searching for '{pure_search_name}'..."):
-            st.session_state.pure_search_results = search_pure_profiles(
-                pure_search_name, institution=pure_search_inst
-            )
-            st.session_state.pure_confirmed_url = ""
-        if not st.session_state.pure_search_results:
-            st.warning("No profile found. Try just your last name, or clear the university field.")
+    if orcid_input and fetch_clicked:
+        inp = orcid_input.strip().rstrip("/")
+        # Accept bare ID or full URL
+        if inp.startswith("https://orcid.org/"):
+            orcid_id = inp.split("/")[-1]
+            orcid_url = inp
+        elif _ORCID_ID_RE.match(inp):
+            orcid_id = inp
+            orcid_url = f"https://orcid.org/{inp}"
+        else:
+            st.error("That doesn't look like an ORCID. Expected format: 0000-0001-2345-6789")
+            orcid_id = ""
+            orcid_url = ""
 
-    # ── Multiple results: pick one ──
-    if st.session_state.pure_search_results and len(st.session_state.pure_search_results) > 1:
-        st.markdown("**More than one match — which is you?**")
-        for result in st.session_state.pure_search_results:
-            orcid_id = result["url"].rstrip("/").split("/")[-1]
-            # Show institution if known, otherwise show ORCID ID so user can verify
-            identifier = result["department"] if result["department"] else f"ORCID: {orcid_id}"
-            btn_label = f"{result['name']} — {identifier}"
-            if st.button(btn_label, key=f"pick_{result['url']}", use_container_width=True):
-                _import_profile(result)
+        if orcid_id:
+            with st.spinner("Fetching profile and publications from ORCID..."):
+                full_name, institution, person_error = fetch_orcid_person(orcid_id)
+                keywords, titles, coauthor_map, works_error = fetch_orcid_works(orcid_id)
 
-    # ── Single result: auto-import immediately ──
-    elif st.session_state.pure_search_results and len(st.session_state.pure_search_results) == 1:
-        result = st.session_state.pure_search_results[0]
-        with st.spinner(f"Found {result['name']} — importing profile..."):
-            _import_profile(result)
-
-    # ── Manual fallback: Pure or ORCID URL ──
-    with st.expander("Paste a profile URL instead (Pure or ORCID)"):
-        manual_url = st.text_input(
-            "Profile URL",
-            placeholder="https://orcid.org/0000-0000-0000-0000  or  https://pure.au.dk/portal/en/persons/...",
-            key="manual_profile_url",
-        )
-        if manual_url and st.button("📥 Import from URL", type="primary"):
-            if manual_url.startswith("https://orcid.org/"):
-                orcid_id = manual_url.rstrip("/").split("/")[-1]
-                with st.spinner("Fetching from ORCID..."):
-                    keywords, _, error = fetch_orcid_works(orcid_id)
-                if error:
-                    st.error(f"Could not fetch: {error}")
-                else:
-                    _apply_orcid_keywords(keywords, orcid_url=manual_url)
+            if person_error:
+                st.error(f"Could not fetch profile: {person_error}")
             else:
-                with st.spinner("Scanning profile page..."):
-                    keywords, coauthors, error = scrape_pure_profile(manual_url)
-                if error:
-                    if "403" in str(error) or "Forbidden" in str(error):
-                        st.error("Pure portal is Cloudflare-protected.")
-                        st.info("Use name search above instead — it uses ORCID which works reliably.")
-                    else:
-                        st.error(f"Could not scan: {error}")
-                else:
-                    _apply_pure_keywords(keywords, coauthors)
+                # Find AU colleagues in the background (parallel ORCID checks)
+                au_colleagues: list[str] = []
+                if coauthor_map:
+                    with st.spinner("Checking co-authors for Aarhus University affiliation..."):
+                        au_colleagues = find_au_colleagues(
+                            coauthor_map,
+                            institution=institution or "Aarhus University",
+                        )
+
+                # Build research summary from titles using AI
+                research_summary = ""
+                if titles and ai_assist:
+                    with st.spinner("Summarising your research..."):
+                        research_summary = _summarise_research(titles)
+
+                st.session_state.orcid_preview = {
+                    "name": full_name,
+                    "institution": institution or "Aarhus University",
+                    "orcid_url": orcid_url,
+                    "keywords": keywords or {},
+                    "titles": titles or [],
+                    "au_colleagues": au_colleagues,
+                    "research_summary": research_summary,
+                    # Track which colleagues the user wants to import
+                    "selected_colleagues": list(au_colleagues),
+                }
+                if works_error:
+                    st.warning("Profile found but no publications on ORCID — keywords and colleagues will be empty.")
+
+    # ── Review card: show what was found, let user correct ──
+    if st.session_state.orcid_preview:
+        p = st.session_state.orcid_preview
+        st.markdown("**Review what we found — correct anything before importing:**")
+
+        p["name"] = st.text_input("Name", value=p["name"], key="preview_name")
+        p["institution"] = st.text_input("Institution", value=p["institution"], key="preview_institution")
+        st.caption(f"ORCID: {p['orcid_url']}")
+
+        if p.get("research_summary"):
+            st.markdown("**Research summary (AI-generated from your publications):**")
+            p["research_summary"] = st.text_area(
+                "Research summary",
+                value=p["research_summary"],
+                height=100,
+                key="preview_summary",
+                label_visibility="collapsed",
+            )
+
+        if p["keywords"]:
+            st.markdown("**Keywords from your publications:**")
+            kw_display = "  ·  ".join(
+                k for k, _ in sorted(p["keywords"].items(), key=lambda x: -x[1])[:12]
+            )
+            st.caption(kw_display)
+        else:
+            st.caption("No keywords found — you can add them manually below.")
+
+        if p.get("au_colleagues"):
+            st.markdown(f"**Colleagues found at {p['institution']}** — uncheck any to exclude:")
+            selected = []
+            for colleague in p["au_colleagues"]:
+                checked = st.checkbox(colleague, value=True, key=f"colleague_{colleague}")
+                if checked:
+                    selected.append(colleague)
+            p["selected_colleagues"] = selected
+        elif p.get("titles"):
+            st.caption("No Aarhus University colleagues found in your co-author list.")
+
+        if st.button("✓ Looks good — import", type="primary"):
+            _commit_preview()
+            st.rerun()
 
 st.divider()
 

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from bs4 import BeautifulSoup
@@ -71,6 +72,50 @@ STOPWORDS = {
 # ─────────────────────────────────────────────────────────────
 #  Profile Search (ORCID)
 # ─────────────────────────────────────────────────────────────
+
+def fetch_orcid_person(orcid_id: str) -> tuple[str, str, str | None]:
+    """
+    Fetch name and primary institution for a known ORCID ID.
+
+    Returns (full_name, institution, error). institution is empty string if no
+    employment record exists. error is None on success or a message string on failure.
+    """
+    try:
+        person_resp = requests.get(
+            f"https://pub.orcid.org/v3.0/{orcid_id}/person",
+            headers=_ORCID_HEADERS,
+            timeout=10,
+        )
+        person_resp.raise_for_status()
+        person = person_resp.json()
+        name_info = person.get("name", {}) or {}
+        given = (name_info.get("given-names") or {}).get("value", "")
+        family = (name_info.get("family-name") or {}).get("value", "")
+        full_name = f"{given} {family}".strip()
+        if not full_name:
+            return "", "", "No name found on this ORCID profile."
+    except Exception as e:
+        return "", "", str(e)
+
+    institution = ""
+    try:
+        emp_resp = requests.get(
+            f"https://pub.orcid.org/v3.0/{orcid_id}/employments",
+            headers=_ORCID_HEADERS,
+            timeout=10,
+        )
+        if emp_resp.status_code == 200:
+            aff_groups = emp_resp.json().get("affiliation-group", [])
+            if aff_groups:
+                summaries = aff_groups[0].get("summaries", [])
+                if summaries:
+                    emp = summaries[0].get("employment-summary", {})
+                    institution = (emp.get("organization") or {}).get("name", "")
+    except Exception:
+        pass  # Institution is optional — don't fail the whole fetch
+
+    return full_name, institution, None
+
 
 def search_pure_profiles(name: str, institution: str = "", base_url: str = "https://pure.au.dk") -> list[dict]:
     """
@@ -319,26 +364,25 @@ def scrape_pure_profile(url: str) -> tuple[dict | None, list | None, str | None]
 #  Publication Fetch (ORCID works API)
 # ─────────────────────────────────────────────────────────────
 
-def fetch_orcid_works(orcid_id: str) -> tuple[dict | None, list | None, str | None]:
+def fetch_orcid_works(orcid_id: str) -> tuple[dict | None, list[str] | None, list[str] | None, str | None]:
     """
-    Fetch publication titles from the ORCID public API and derive keywords.
+    Fetch publications from the ORCID public API, derive keywords, and collect co-authors.
 
-    Hits the /works summary endpoint, which returns one entry per work group (ORCID
-    deduplicates multiple sources of the same paper). Only the first summary per group
-    is used — they are equivalent for title extraction purposes.
-
-    Note: the /works summary endpoint does not reliably include full co-author lists.
-    Only the work's registered contributors appear, not all paper authors. Co-author
-    extraction is not attempted here; an empty list is always returned. For co-authors,
-    use scrape_pure_profile() if a Pure URL is available.
+    Hits the /works summary endpoint. Co-authors are extracted from the contributor
+    fields present in each work summary; ORCID does not guarantee these are complete,
+    but repeat appearances across many papers reliably identify close collaborators.
 
     Args:
         orcid_id: bare ORCID identifier (e.g. "0000-0001-7568-6674")
 
     Returns:
-        (keywords_dict, [], error) — keywords_dict maps keyword to weight (1-10),
-        co-authors list is always empty, error is None on success or an error string.
-        Returns (None, None, error_str) on failure.
+        (keywords_dict, titles, coauthor_orcids_dict, error)
+        - keywords_dict maps keyword to weight (1-10)
+        - titles is the list of raw publication titles (for AI summary)
+        - coauthor_orcids_dict maps ORCID ID -> display name for co-authors who have ORCIDs;
+          a plain name list for those without ORCIDs is folded into the dict with "" keys
+        - error is None on success or an error string on failure
+        Returns (None, None, None, error_str) on failure.
     """
     try:
         resp = requests.get(
@@ -348,21 +392,45 @@ def fetch_orcid_works(orcid_id: str) -> tuple[dict | None, list | None, str | No
         )
         resp.raise_for_status()
     except Exception as e:
-        return None, None, str(e)
+        return None, None, None, str(e)
 
     titles: list[str] = []
+    # orcid_id -> name for co-authors with ORCIDs; name -> "" for those without
+    coauthor_map: dict[str, str] = {}
+    name_appearances: Counter[str] = Counter()
+
     for group in resp.json().get("group", []):
         for summary in group.get("work-summary", []):
             title_obj = (summary.get("title") or {}).get("title") or {}
             title_value = title_obj.get("value", "").strip()
             if title_value:
                 titles.append(title_value)
-                break  # First summary per group is sufficient; ORCID deduplicates
+
+            # Collect contributors from this work summary
+            contributors = (summary.get("contributors") or {}).get("contributor", [])
+            for contrib in contributors:
+                role = ((contrib.get("contributor-attributes") or {}).get("contributor-role") or "").lower()
+                if role and role not in ("author", ""):
+                    continue
+                name = ((contrib.get("credit-name") or {}).get("value") or "").strip()
+                if not name or len(name) < 3:
+                    continue
+                contrib_orcid = ((contrib.get("contributor-orcid") or {}).get("path") or "").strip()
+                if contrib_orcid and contrib_orcid != orcid_id:
+                    coauthor_map[contrib_orcid] = name
+                elif name:
+                    name_appearances[name] += 1
+            break  # First summary per group is sufficient for titles
 
     if not titles:
-        return None, None, "No publications found on this ORCID profile."
+        return None, None, None, "No publications found on this ORCID profile."
 
-    # Keyword extraction — same bigram-then-unigram logic as scrape_pure_profile
+    # Add name-only co-authors who appeared in 2+ papers (reduces noise)
+    for name, count in name_appearances.items():
+        if count >= 2:
+            coauthor_map[f"__name__{name}"] = name
+
+    # Keyword extraction — bigram-then-unigram logic
     word_counts: Counter[str] = Counter()
     bigram_counts: Counter[str] = Counter()
 
@@ -390,4 +458,54 @@ def fetch_orcid_works(orcid_id: str) -> tuple[dict | None, list | None, str | No
         for term, count in combined.most_common(20):
             keywords[term] = max(1, round(10 * count / max_count))
 
-    return keywords, [], None
+    return keywords, titles, coauthor_map, None
+
+
+def find_au_colleagues(
+    coauthor_map: dict[str, str],
+    institution: str = "Aarhus University",
+    max_checks: int = 20,
+) -> list[str]:
+    """
+    Filter co-authors to those affiliated with the given institution.
+
+    Checks ORCID employment records in parallel for co-authors who have ORCID IDs.
+    Co-authors without ORCIDs (keyed as '__name__<name>') are excluded — no way to
+    verify affiliation without an ORCID.
+
+    Args:
+        coauthor_map: dict returned by fetch_orcid_works (orcid_id -> name, or __name__name -> name)
+        institution: institution name to match (case-insensitive substring)
+        max_checks: max number of ORCID lookups to perform
+
+    Returns:
+        List of display names confirmed to be at the given institution.
+    """
+    candidates = {
+        orcid_id: name
+        for orcid_id, name in coauthor_map.items()
+        if not orcid_id.startswith("__name__")
+    }
+    if not candidates:
+        return []
+
+    inst_lower = institution.lower()
+    au_colleagues: list[str] = []
+
+    def _check(orcid_id: str, name: str) -> str | None:
+        _, emp_institution, error = fetch_orcid_person(orcid_id)
+        if not error and inst_lower in emp_institution.lower():
+            return name
+        return None
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {
+            pool.submit(_check, oid, nm): nm
+            for oid, nm in list(candidates.items())[:max_checks]
+        }
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                au_colleagues.append(result)
+
+    return au_colleagues

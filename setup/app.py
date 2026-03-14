@@ -301,10 +301,40 @@ CATEGORY_HINTS = {
         "general relativity", "gravitational wave", "black hole", "spacetime",
         "metric", "Einstein", "curvature", "singularity", "LIGO",
     ],
-    "cond-mat": [
-        "condensed matter", "solid state", "lattice", "phonon", "electron",
-        "superconductor", "topological", "Fermi surface", "Bose-Einstein", "crystal",
-        "semiconductor", "magnetism", "spin chain", "band structure", "insulator",
+    "cond-mat.supr-con": [
+        "superconductor", "superconductivity", "BCS", "Cooper pair", "vortex",
+        "Josephson", "pairing", "Tc", "Meissner", "flux",
+    ],
+    "cond-mat.str-el": [
+        "strongly correlated", "Mott insulator", "Hubbard", "Kondo", "heavy fermion",
+        "correlated electron", "charge order", "orbital order", "spin liquid", "Wigner",
+    ],
+    "cond-mat.mes-hall": [
+        "quantum dot", "quantum well", "nanostructure", "mesoscopic", "Hall effect",
+        "edge state", "nanowire", "carbon nanotube", "graphene", "2D material",
+        "topological insulator", "Dirac", "Weyl", "quantum transport", "spintronics",
+    ],
+    "cond-mat.mtrl-sci": [
+        "material", "thin film", "alloy", "doping", "defect", "grain boundary",
+        "first-principles", "DFT", "density functional", "ab initio", "crystal structure",
+        "X-ray diffraction", "XRD", "synthesis", "epitaxy", "heterostructure",
+    ],
+    "cond-mat.stat-mech": [
+        "statistical mechanics", "phase transition", "critical exponent", "renormalization",
+        "Ising model", "Monte Carlo", "entropy", "free energy", "thermodynamic",
+        "universality", "scaling", "order parameter",
+    ],
+    "cond-mat.soft": [
+        "soft matter", "polymer", "colloid", "liquid crystal", "gel", "foam",
+        "active matter", "self-assembly", "rheology", "viscoelastic", "amphiphile",
+    ],
+    "cond-mat.quant-gas": [
+        "ultracold", "Bose-Einstein condensate", "BEC", "optical lattice", "cold atom",
+        "Fermi gas", "Feshbach resonance", "superfluidity", "quantum gas",
+    ],
+    "cond-mat.dis-nn": [
+        "disorder", "Anderson localization", "spin glass", "random", "amorphous",
+        "percolation", "neural network", "glassy", "many-body localization", "MBL",
     ],
     "quant-ph": [
         "quantum computing", "qubit", "entanglement", "quantum information",
@@ -345,16 +375,48 @@ CATEGORY_HINTS = {
 }
 
 
-def suggest_categories(text):
-    """Score arXiv categories by keyword overlap with research description."""
+def suggest_categories(text: str) -> list[str]:
+    """Return up to 6 relevant arXiv category codes for the given research description.
+
+    Uses AI when available for field-agnostic suggestions; falls back to keyword
+    matching against CATEGORY_HINTS.
+    """
+    if _ai_available():
+        cat_list = "\n".join(
+            f"  {code}: {name}" for code, name in ARXIV_CATEGORIES.items()
+        )
+        prompt = (
+            f"A researcher describes their work as:\n\"{text}\"\n\n"
+            f"Here is the full list of arXiv categories:\n{cat_list}\n\n"
+            "Return ONLY a JSON array of the 4–6 most relevant category codes "
+            "(e.g. [\"cond-mat.supr-con\", \"cond-mat.mes-hall\"]). "
+            "Pick the best-matching sub-categories — never return a bare top-level code "
+            "like 'cond-mat' or 'astro-ph' unless it appears exactly in the list above. "
+            "No explanation, no other text."
+        )
+        raw = _call_ai(prompt)
+        if raw:
+            try:
+                raw = re.sub(r"^```[a-z]*\n?", "", raw.strip())
+                raw = re.sub(r"\n?```$", "", raw)
+                cats = json.loads(raw)
+                # Keep only codes that actually exist in our catalogue
+                valid = [c for c in cats if c in ARXIV_CATEGORIES]
+                if valid:
+                    return valid[:6]
+            except Exception:
+                pass  # fall through to regex fallback
+
+    # Regex fallback — keyword overlap
     text_lower = text.lower()
     scores = {}
     for cat, hints in CATEGORY_HINTS.items():
+        if cat not in ARXIV_CATEGORIES:
+            continue
         score = sum(1 for h in hints if h.lower() in text_lower)
         if score > 0:
             scores[cat] = score
-    # Return categories sorted by score, top 5
-    return sorted(scores, key=scores.get, reverse=True)[:5]
+    return sorted(scores, key=scores.get, reverse=True)[:6]
 
 
 def _call_ai(prompt: str, max_tokens: int = 512) -> str | None:

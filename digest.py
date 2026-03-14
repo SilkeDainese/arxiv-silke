@@ -15,11 +15,13 @@ import os
 import json
 import re
 import smtplib
+import sys
 import time
 import urllib.request
 import urllib.parse
+import webbrowser
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -309,7 +311,7 @@ def _matched_keywords_for_text(text: str, config: dict[str, Any]) -> list[str]:
 def update_keyword_stats(papers: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, Any]:
     """Track which keywords matched papers in this run."""
     stats = load_keyword_stats()
-    today = datetime.utcnow().strftime("%Y-%m-%d")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     for kw in config["keywords"]:
         if kw not in stats:
@@ -446,7 +448,7 @@ def ingest_feedback_from_github(config: dict[str, Any]) -> dict[str, Any]:
 
     stats["processed_issue_ids"] = sorted(processed)
     stats["keyword_feedback"] = keyword_feedback
-    stats["updated_at"] = datetime.utcnow().strftime("%Y-%m-%d")
+    stats["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     save_feedback_stats(stats)
 
     if new_count:
@@ -510,7 +512,7 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
             print(f"  ⚠️  Failed to parse arXiv XML for {category}: {exc}")
             continue
         ns = {"atom": "http://www.w3.org/2005/Atom"}
-        cutoff = datetime.utcnow() - timedelta(days=config["days_back"])
+        cutoff = datetime.now(timezone.utc) - timedelta(days=config["days_back"])
 
         for entry in root.findall("atom:entry", ns):
             try:
@@ -710,8 +712,14 @@ def _default_analysis(paper: dict[str, Any]) -> dict[str, Any]:
     """Fallback analysis fields when AI scoring fails."""
     # keyword_hits is normalized 0-100, map to 1-10 scale
     bias = paper.get("feedback_bias", 0)
+    kw_score = round(paper["keyword_hits"] / 10)
+    author_boost = len(paper["known_authors"]) * 3
+    feedback_adj = round(bias * 0.4)
+    has_signal = paper["keyword_hits"] > 0 or paper["known_authors"]
+    raw_score = kw_score + author_boost + feedback_adj if has_signal else 1
+    score = min(10, max(1, raw_score))
     return {
-        "relevance_score": min(10, max(1, round(paper["keyword_hits"] / 10) + len(paper["known_authors"]) * 3 + round(bias * 0.4))) if paper["keyword_hits"] > 0 or paper["known_authors"] else 1,
+        "relevance_score": score,
         "plain_summary": paper["abstract"][:300] + ("..." if len(paper["abstract"]) > 300 else ""),
         "why_interesting": "Matched your keywords." + (
             f" Known author(s): {', '.join(paper['known_authors'])}." if paper["known_authors"] else ""
@@ -950,7 +958,9 @@ def analyse_papers(papers: list[dict[str, Any]], config: dict[str, Any]) -> tupl
 
 # ── Brand palette ──
 from brand import (PINE, GOLD, UMBER, ASH_WHITE, ASH_BLACK,
-                   CARD_BORDER, WARM_GREY, PINE_WASH, PINE_LIGHT, GOLD_LIGHT)
+                   CARD_BORDER, WARM_GREY, PINE_WASH, PINE_LIGHT, GOLD_LIGHT,
+                   GOLD_WASH, ALERT_RED, ALERT_RED_WASH, CATALOG_PURPLE, CATALOG_WASH,
+                   FONT_HEADING, FONT_BODY, FONT_MONO)
 
 
 # ── Shared inline-style constants ──
@@ -986,15 +996,15 @@ def _build_tags(p: dict[str, Any]) -> str:
     tags.append(f'<span style="{_TAG};background:{PINE_WASH};color:{PINE}">{p["category"]}</span>')
     tags.append(f'<span style="{_TAG};color:{WARM_GREY}">{p["published"]}</span>')
     for a in p.get("known_authors", []):
-        tags.append(f'<span style="{_TAG};background:#FFF8E1;color:{UMBER}">&#x1F44B; {a}</span>')
+        tags.append(f'<span style="{_TAG};background:{GOLD_WASH};color:{UMBER}">&#x1F44B; {a}</span>')
     if score >= 9:
-        tags.append(f'<span style="{_TAG};background:#FFF0F0;color:#C0392B">&#x1F525; must-read</span>')
+        tags.append(f'<span style="{_TAG};background:{ALERT_RED_WASH};color:{ALERT_RED}">&#x1F525; must-read</span>')
     elif score >= 8:
-        tags.append(f'<span style="{_TAG};background:#FFF8E1;color:{UMBER}">&#x1F4CC; thesis</span>')
+        tags.append(f'<span style="{_TAG};background:{GOLD_WASH};color:{UMBER}">&#x1F4CC; thesis</span>')
     for kw in (p.get("kw_tags") or [])[:2]:
         tags.append(f'<span style="{_TAG};background:{PINE_WASH};color:{PINE}">{_esc(kw)}</span>')
     if p.get("is_new_catalog"):
-        tags.append(f'<span style="{_TAG};background:#F3E8FF;color:#6B21A8">&#x1F4E6; catalog</span>')
+        tags.append(f'<span style="{_TAG};background:{CATALOG_WASH};color:{CATALOG_PURPLE}">&#x1F4E6; catalog</span>')
     if p.get("cite_worthy"):
         tags.append(f'<span style="{_TAG};background:{PINE_WASH};color:{PINE}">&#x1F4CE; cite this</span>')
     if p.get("new_result"):
@@ -1004,7 +1014,7 @@ def _build_tags(p: dict[str, Any]) -> str:
 
 def _build_method_tags(p: dict[str, Any]) -> str:
     """Build inline HTML method tag spans for a paper card."""
-    return " ".join(f'<span style="{_TAG};background:#FFF8E1;color:{UMBER}">{_esc(t)}</span>' for t in (p.get("method_tags") or []))
+    return " ".join(f'<span style="{_TAG};background:{GOLD_WASH};color:{UMBER}">{_esc(t)}</span>' for t in (p.get("method_tags") or []))
 
 
 def _one_sentence(text: str) -> str:
@@ -1074,7 +1084,7 @@ def _render_own_paper_section(own_papers: list[dict[str, Any]], researcher_name:
             authors_short += f" +{len(p['authors'])-4}"
         own_cards += f"""
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px">
-          <tr><td style="background:linear-gradient(135deg, {PINE_WASH}, #FFF8E1);border:2px solid {GOLD};border-radius:8px;padding:20px 22px">
+          <tr><td style="background:linear-gradient(135deg, {PINE_WASH}, {GOLD_WASH});border:2px solid {GOLD};border-radius:8px;padding:20px 22px">
             <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:{PINE};margin-bottom:8px">&#x1F389; Congratulations, {researcher_name}!</div>
             <div style="font-family:'DM Serif Display',Georgia,serif;font-size:18px;color:{ASH_BLACK};line-height:1.4;margin-bottom:6px">
               <a href="{p['url']}" style="color:{ASH_BLACK};text-decoration:none">{_esc(p['title'])}</a>
@@ -1126,7 +1136,7 @@ def _render_colleague_section(colleague_papers: list[dict[str, Any]]) -> str:
             authors_short += f" +{len(p['authors'])-3}"
         postits += f"""
         <table width="48%" cellpadding="0" cellspacing="0" border="0" style="display:inline-table;vertical-align:top;margin:6px 1%">
-          <tr><td style="background:#FFF8E1;border:1px solid {GOLD_LIGHT};border-radius:6px;padding:14px 16px">
+          <tr><td style="background:{GOLD_WASH};border:1px solid {GOLD_LIGHT};border-radius:6px;padding:14px 16px">
             <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:{UMBER};margin-bottom:6px">&#x1F389; {names}</div>
             <div style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:{ASH_BLACK};line-height:1.4;margin-bottom:4px">
               <a href="{p['url']}" style="color:{ASH_BLACK};text-decoration:none">{_esc(p['title'][:80])}{'...' if len(p['title']) > 80 else ''}</a>
@@ -1184,15 +1194,17 @@ def _render_paper_card(p: dict[str, Any], is_top_pick: bool, total_papers: int, 
                 <div style="font-family:'DM Mono',monospace;font-size:10px;color:{WARM_GREY};margin-bottom:8px">{_esc(authors_display)}</div>
                 <div style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:{ASH_BLACK};line-height:1.55;margin:0 0 10px"><strong>What changed:</strong> {what_changed}</div>
                 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px">
-                    <tr><td style="background:#FFF8E1;border:1px solid {GOLD_LIGHT};border-radius:5px;padding:10px 12px">
+                    <tr><td style="background:{GOLD_WASH};border:1px solid {GOLD_LIGHT};border-radius:5px;padding:10px 12px">
                         <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:{WARM_GREY};margin-bottom:6px">&#x2B50; Why it matters to you</div>
                         <div style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:{UMBER};line-height:1.65">{why}</div>
                     </td></tr>
                 </table>
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                    <div>{feedback_links}</div>
-                    <a href="{p['url']}" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:{PINE};text-decoration:none;border:1px solid {PINE};padding:6px 12px;border-radius:3px;display:inline-block;white-space:nowrap">Read paper &#x2192;</a>
-                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td style="vertical-align:middle">{feedback_links}</td>
+                        <td style="vertical-align:middle;text-align:right"><a href="{p['url']}" style="font-family:{FONT_MONO};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:{PINE};text-decoration:none;border:1px solid {PINE};padding:6px 12px;border-radius:3px;display:inline-block;white-space:nowrap">Read paper &#x2192;</a></td>
+                    </tr>
+                </table>
             </td></tr>
         </table>"""
 
@@ -1207,17 +1219,21 @@ def _render_skim_card(p: dict[str, Any], github_repo: str) -> str:
         return f"""
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px">
             <tr><td style="background:white;border:1px solid {CARD_BORDER};border-left:4px solid {ac};border-radius:7px;padding:12px 14px">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
-                    <div style="font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;line-height:1.35;color:{ASH_BLACK}">
-                        <a href="{p['url']}" style="color:{ASH_BLACK};text-decoration:none">{_esc(_short_title(p['title'], 90))}</a>
-                    </div>
-                    <div style="font-family:'DM Mono',monospace;font-size:10px;color:{ac};white-space:nowrap">{score}/10</div>
-                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:4px">
+                    <tr>
+                        <td style="font-family:{FONT_BODY};font-size:14px;font-weight:600;line-height:1.35;color:{ASH_BLACK}">
+                            <a href="{p['url']}" style="color:{ASH_BLACK};text-decoration:none">{_esc(_short_title(p['title'], 90))}</a>
+                        </td>
+                        <td width="50" style="font-family:{FONT_MONO};font-size:10px;color:{ac};white-space:nowrap;text-align:right;vertical-align:top">{score}/10</td>
+                    </tr>
+                </table>
                 <div style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:{ASH_BLACK};line-height:1.5;margin-bottom:8px">{summary}</div>
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                    <div>{feedback_links}</div>
-                    <span style="font-family:'DM Mono',monospace;font-size:9px;color:{WARM_GREY}">{p.get('category', '')}</span>
-                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td style="vertical-align:middle">{feedback_links}</td>
+                        <td style="vertical-align:middle;text-align:right"><span style="font-family:{FONT_MONO};font-size:9px;color:{WARM_GREY}">{p.get('category', '')}</span></td>
+                    </tr>
+                </table>
             </td></tr>
         </table>"""
 
@@ -1227,7 +1243,7 @@ def _render_scoring_notice(scoring_method: str) -> str:
     if scoring_method == "keywords_fallback":
         return f"""
   <tr><td style="padding:12px 44px">
-    <div style="background:#FFF8E1;border:1px solid {GOLD_LIGHT};border-radius:6px;padding:14px 18px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:{UMBER};text-align:center">
+    <div style="background:{GOLD_WASH};border:1px solid {GOLD_LIGHT};border-radius:6px;padding:14px 18px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:{UMBER};text-align:center">
       &#x26A0;&#xFE0F; <strong>AI scoring unavailable this run</strong> — your API key may be out of credits. Papers were scored by keyword matching only, so relevance scores may be less accurate. Top up at <a href="https://console.anthropic.com" style="color:{PINE}">console.anthropic.com</a> or add a free <a href="https://aistudio.google.com/apikey" style="color:{PINE}">Gemini API key</a> as backup.
     </div>
   </td></tr>"""
@@ -1241,7 +1257,7 @@ def _render_scoring_notice(scoring_method: str) -> str:
     elif scoring_method == "gemini_rate_limited":
         return f"""
     <tr><td style="padding:12px 44px">
-        <div style="background:#FFF8E1;border:1px solid {GOLD_LIGHT};border-radius:6px;padding:14px 18px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:{UMBER};text-align:center">
+        <div style="background:{GOLD_WASH};border:1px solid {GOLD_LIGHT};border-radius:6px;padding:14px 18px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:{UMBER};text-align:center">
             &#x23F3; <strong>Gemini free-tier limit reached</strong> — this run fell back to keyword scoring. Try again later when quota resets, or reduce manual reruns to avoid API spam.
         </div>
     </td></tr>"""
@@ -1385,7 +1401,6 @@ def _render_css(digest_name: str, researcher_name: str, date_str: str) -> str:
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{digest_name}{'' if researcher_name.split()[0].lower() in digest_name.lower() else f' for {researcher_name}'} — {date_str}</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Sans:wght@300;400;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background:{ASH_WHITE};color:{ASH_BLACK};font-family:'IBM Plex Sans',Helvetica,Arial,sans-serif;font-weight:300;line-height:1.7;-webkit-font-smoothing:antialiased">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{ASH_WHITE}">
@@ -1424,7 +1439,7 @@ def render_html(papers: list[dict[str, Any]], colleague_papers: list[dict[str, A
             )
 
     if not papers and not colleague_papers:
-        cards_html = f'<div style="text-align:center;padding:60px 24px;color:{WARM_GREY};font-family:\'DM Serif Display\',Georgia,serif;font-style:italic;font-size:18px">No highly relevant papers this period. The cosmos is quiet. &#x2615;</div>'
+        cards_html = f'<div style="text-align:center;padding:60px 24px;color:{WARM_GREY};font-family:\'DM Serif Display\',Georgia,serif;font-style:italic;font-size:18px">No highly relevant papers this period. All quiet on the arXiv front. &#x2615;</div>'
 
     # ── Assemble full document ──
     return (
@@ -1492,7 +1507,8 @@ def _parse_recipient_emails(value: Any) -> list[str]:
 #  EMAIL SENDING — Multi-provider SMTP
 # ─────────────────────────────────────────────────────────────
 
-def send_email(html: str, paper_count: int, date_str: str, config: dict[str, Any]) -> None:
+def send_email(html: str, paper_count: int, date_str: str, config: dict[str, Any],
+               papers: list[dict[str, Any]] | None = None) -> None:
     """Send the digest HTML as an email via SMTP.
 
     Args:
@@ -1500,6 +1516,7 @@ def send_email(html: str, paper_count: int, date_str: str, config: dict[str, Any
         paper_count: Total number of papers to display in the subject line.
         date_str: Human-readable date string for the subject line.
         config: Application config containing SMTP and recipient settings.
+        papers: Optional list of paper dicts for the plain-text fallback.
     """
     recipients = _parse_recipient_emails(config.get("recipient_email"))
 
@@ -1523,7 +1540,17 @@ def send_email(html: str, paper_count: int, date_str: str, config: dict[str, Any
     msg["Subject"] = subject
     msg["From"] = f"{digest_name} <{smtp_user}>"
     msg["To"] = recipient_label
-    msg.attach(MIMEText(f"Your arXiv digest for {date_str} — {paper_count} papers. Open in a browser for the full experience.", "plain"))
+    # Build informative plain-text fallback
+    plain_lines = [f"Your arXiv digest for {date_str} — {paper_count} papers.\n"]
+    if papers:
+        for p in papers[:10]:
+            score = p.get("relevance_score", "?")
+            plain_lines.append(f"  [{score}/10] {p.get('title', 'Untitled')}")
+            plain_lines.append(f"         {p.get('url', '')}")
+        if len(papers) > 10:
+            plain_lines.append(f"  ... and {len(papers) - 10} more")
+    plain_lines.append("\nOpen in a browser for the full experience.")
+    msg.attach(MIMEText("\n".join(plain_lines), "plain"))
     msg.attach(MIMEText(html, "html"))
 
     try:
@@ -1557,12 +1584,9 @@ def send_email(html: str, paper_count: int, date_str: str, config: dict[str, Any
 
 def main() -> None:
     """Run the full arXiv digest pipeline: fetch, score, render, and email."""
-    import sys
-    import webbrowser
-
     preview_mode = "--preview" in sys.argv
 
-    date_str = datetime.utcnow().strftime("%B %d, %Y")
+    date_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
     print(f"\n🔭 arXiv Digest — {date_str}")
     if preview_mode:
         print("   (preview mode — no email will be sent)")
@@ -1619,7 +1643,7 @@ def main() -> None:
         print("   Opened in your browser. No email sent.")
     else:
         print("\n📧 Sending email...")
-        send_email(html, total_count, date_str, config)
+        send_email(html, total_count, date_str, config, papers=final_papers)
 
     print("\n✨ Done!\n")
 

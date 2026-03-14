@@ -13,6 +13,7 @@ import re
 import sys
 import time
 from collections import Counter
+from collections.abc import Mapping
 from pathlib import Path
 
 import yaml
@@ -1095,7 +1096,7 @@ def _has_server_key() -> bool:
 
 def _normalise_invite_bundles(raw: object) -> dict[str, dict[str, str]]:
     """Return invite-code bundles in a consistent {code: secrets} shape."""
-    if not isinstance(raw, dict):
+    if not isinstance(raw, Mapping):
         return {}
 
     bundles: dict[str, dict[str, str]] = {}
@@ -1110,7 +1111,7 @@ def _normalise_invite_bundles(raw: object) -> dict[str, dict[str, str]]:
                 bundles[clean_code] = {"relay_token": token}
             continue
 
-        if not isinstance(payload, dict):
+        if not isinstance(payload, Mapping):
             continue
 
         relay_token = str(

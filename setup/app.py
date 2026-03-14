@@ -840,6 +840,7 @@ else:
                     "keywords": keywords or {},
                     "titles": titles or [],
                     "au_colleagues": au_colleagues,
+                    "all_coauthors": sorted(coauthor_map.values()) if coauthor_map else [],
                     "research_summary": research_summary,
                     # Track which colleagues the user wants to import
                     "selected_colleagues": list(au_colleagues),
@@ -879,18 +880,38 @@ else:
 
         # ── Colleagues ──
         st.markdown("**Colleagues to track** — papers by these people always appear in your digest:")
+        # Preserve manually added colleagues across re-renders
+        p.setdefault("selected_colleagues", [])
+
         if p.get("au_colleagues"):
             st.caption(f"Found {len(p['au_colleagues'])} co-authors at {p['institution']} — uncheck any to exclude, or add more below.")
-            selected = []
+            manual = [c for c in p["selected_colleagues"] if c not in p["au_colleagues"]]
+            selected = list(manual)
             for colleague in p["au_colleagues"]:
                 checked = st.checkbox(colleague, value=True, key=f"colleague_{colleague}")
                 if checked:
                     selected.append(colleague)
             p["selected_colleagues"] = selected
         else:
-            p["selected_colleagues"] = []
             if p.get("titles"):
                 st.caption(f"No co-authors with confirmed {p['institution']} affiliation found automatically.")
+
+        # Show manually added colleagues (not from auto-detection)
+        manual_added = [c for c in p["selected_colleagues"] if c not in p.get("au_colleagues", [])]
+        if manual_added:
+            st.caption("Manually added colleagues:")
+            to_remove = []
+            for mc in manual_added:
+                mc_col, rm_col = st.columns([6, 1])
+                with mc_col:
+                    st.markdown(f"· {mc}")
+                with rm_col:
+                    if st.button("✕", key=f"rm_manual_{mc}"):
+                        to_remove.append(mc)
+            for mc in to_remove:
+                p["selected_colleagues"].remove(mc)
+            if to_remove:
+                st.rerun()
 
         # Manual add by ORCID — for colleagues not found automatically
         st.caption("Add a colleague by their ORCID:")
@@ -924,6 +945,20 @@ else:
                     p["selected_colleagues"].append(found_name)
                     st.success(f"Added {found_name} ({found_inst or 'no institution on ORCID'})")
                     st.rerun()
+
+        # Pick from all co-authors on previous papers (already fetched from ORCID)
+        all_coauthors = p.get("all_coauthors", [])
+        pickable = [n for n in all_coauthors if n not in p["selected_colleagues"]]
+        if pickable:
+            with st.expander(f"Or pick from your {len(all_coauthors)} ORCID co-authors"):
+                pick_filter = st.text_input("Filter by name", key="coauthor_pick_filter", placeholder="type to filter…")
+                filtered = [n for n in pickable if pick_filter.lower() in n.lower()] if pick_filter else pickable
+                for name in filtered[:30]:
+                    if st.button(f"+ {name}", key=f"pick_coauthor_{name}"):
+                        p["selected_colleagues"].append(name)
+                        st.rerun()
+                if len(filtered) > 30:
+                    st.caption(f"Showing 30 of {len(filtered)} — type more to narrow.")
 
         if st.button("✓ Looks good — import", type="primary"):
             _commit_preview()

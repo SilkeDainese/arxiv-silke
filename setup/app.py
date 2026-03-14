@@ -1192,8 +1192,6 @@ else:
                 key="preview_summary",
                 label_visibility="collapsed",
             )
-        else:
-            st.caption("No research summary generated — you can write one in the next section.")
 
         if p["keywords"]:
             st.markdown("**Keywords from your publications:**")

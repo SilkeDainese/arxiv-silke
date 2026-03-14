@@ -21,6 +21,12 @@ try:
 except ImportError:
     _ANTHROPIC_AVAILABLE = False
 
+try:
+    import google.generativeai as _genai_lib
+    _GEMINI_AVAILABLE = True
+except ImportError:
+    _GEMINI_AVAILABLE = False
+
 # Allow imports from the project root (one level up from setup/)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -336,39 +342,66 @@ def suggest_categories(text):
     return sorted(scores, key=scores.get, reverse=True)[:5]
 
 
-def draft_research_description(keywords: dict[str, int]) -> str:
-    """Generate a first-person research description from keywords.
-
-    Uses Claude if an API key is available; falls back to a keyword sentence.
-    """
-    top_keywords = [k for k, _ in sorted(keywords.items(), key=lambda x: -x[1])[:10]]
-    api_key = _get_anthropic_key()
-
-    if api_key and _ANTHROPIC_AVAILABLE:
-        prompt = (
-            f"A researcher has these keywords extracted from their publications:\n"
-            f"{', '.join(top_keywords)}\n\n"
-            "Write a 3-4 sentence research description in first person (starting with 'I') "
-            "that this researcher could use to describe their work to a colleague. "
-            "Be specific and technical. Return only the description, no other text."
-        )
+def _call_ai(prompt: str, max_tokens: int = 512) -> str | None:
+    """Call Gemini (preferred, free tier) or Claude. Returns text or None on failure."""
+    # Try Gemini first — free tier available via Google AI Studio
+    gemini_key = _get_gemini_key()
+    if gemini_key and _GEMINI_AVAILABLE:
         try:
-            client = _anthropic_lib.Anthropic(api_key=api_key)
+            _genai_lib.configure(api_key=gemini_key)
+            model = _genai_lib.GenerativeModel("gemini-1.5-flash")
+            response = model.generate_content(prompt)
+            return response.text.strip()
+        except Exception:
+            pass
+
+    # Fall back to Anthropic
+    anthropic_key = _get_anthropic_key()
+    if anthropic_key and _ANTHROPIC_AVAILABLE:
+        try:
+            client = _anthropic_lib.Anthropic(api_key=anthropic_key)
             response = client.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=200,
+                max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )
             return response.content[0].text.strip()
         except Exception:
             pass
 
-    # Fallback: simple sentence from top keywords
-    return f"My research focuses on {', '.join(top_keywords[:5])}."
+    return None
+
+
+def draft_research_description(keywords: dict[str, int]) -> str:
+    """Generate a first-person research description from keywords using AI."""
+    top_keywords = [k for k, _ in sorted(keywords.items(), key=lambda x: -x[1])[:10]]
+    prompt = (
+        f"A researcher has these keywords extracted from their publications:\n"
+        f"{', '.join(top_keywords)}\n\n"
+        "Write a 3-4 sentence research description in first person (starting with 'I') "
+        "that this researcher could use to describe their work to a colleague. "
+        "Be specific and technical. Return only the description, no other text."
+    )
+    result = _call_ai(prompt, max_tokens=200)
+    return result if result else f"My research focuses on {', '.join(top_keywords[:5])}."
+
+
+def _get_gemini_key() -> str | None:
+    """Return Gemini API key: session state → secrets → env → None."""
+    user_key = st.session_state.get("user_gemini_key", "").strip()
+    if user_key:
+        return user_key
+    try:
+        key = st.secrets.get("GEMINI_API_KEY")
+        if key:
+            return key
+    except Exception:
+        pass
+    return os.environ.get("GEMINI_API_KEY")
 
 
 def _get_anthropic_key() -> str | None:
-    """Return Anthropic API key: session state (user-provided) → secrets → env → None."""
+    """Return Anthropic API key: session state → secrets → env → None."""
     user_key = st.session_state.get("user_anthropic_key", "").strip()
     if user_key:
         return user_key
@@ -379,6 +412,12 @@ def _get_anthropic_key() -> str | None:
     except Exception:
         pass
     return os.environ.get("ANTHROPIC_API_KEY")
+
+
+def _ai_available() -> bool:
+    """True if any AI key is configured."""
+    return bool((_get_gemini_key() and _GEMINI_AVAILABLE) or
+                (_get_anthropic_key() and _ANTHROPIC_AVAILABLE))
 
 
 def _keyword_regex_fallback(text: str) -> dict[str, int]:
@@ -432,7 +471,7 @@ def suggest_keywords_from_context(text: str, orcid_keywords: dict | None = None)
     """
     api_key = _get_anthropic_key()
 
-    if not api_key or not _ANTHROPIC_AVAILABLE:
+    if not _ai_available():
         return _keyword_regex_fallback(text)
 
     # Build candidate list: ORCID keywords + regex-derived keywords from description
@@ -454,19 +493,13 @@ def suggest_keywords_from_context(text: str, orcid_keywords: dict | None = None)
         "keyword to its integer score. No other text."
     )
 
+    raw = _call_ai(prompt)
+    if not raw:
+        return _keyword_regex_fallback(text)
     try:
-        client = _anthropic_lib.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=512,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = response.content[0].text.strip()
-        # Strip markdown code fences if present
         raw = re.sub(r"^```[a-z]*\n?", "", raw)
         raw = re.sub(r"\n?```$", "", raw)
         scored: dict[str, int] = json.loads(raw)
-        # Keep top 15 by score, clamp to 1-10
         return dict(sorted(
             {k: max(1, min(10, int(v))) for k, v in scored.items()}.items(),
             key=lambda x: -x[1],
@@ -582,20 +615,35 @@ st.markdown(f"""
 # ── Optional API key + AI assist toggle ──
 with st.expander("✨ Enable AI features (optional)"):
     st.markdown(
-        "Paste your [Anthropic API key](https://console.anthropic.com/settings/keys) to unlock "
-        "AI-powered keyword scoring and auto-drafted research descriptions. "
+        "Add an API key to unlock AI-powered keyword scoring and auto-drafted research descriptions. "
         "Your key is only used during this session and never stored."
     )
-    st.text_input(
-        "Anthropic API key",
-        type="password",
-        placeholder="sk-ant-...",
-        key="user_anthropic_key",
-        label_visibility="collapsed",
-        help="Optional — without a key the wizard still works, using pattern matching instead of AI.",
-    )
-    if st.session_state.get("user_anthropic_key"):
-        st.success("API key set — AI features enabled.")
+    col_g, col_a = st.columns(2)
+    with col_g:
+        st.markdown("**Gemini** — free tier, no credit card")
+        st.text_input(
+            "Gemini API key",
+            type="password",
+            placeholder="AIza...",
+            key="user_gemini_key",
+            label_visibility="collapsed",
+            help="Get a free key at aistudio.google.com",
+        )
+        st.caption("[Get a free key →](https://aistudio.google.com/app/apikey)")
+    with col_a:
+        st.markdown("**Anthropic** — alternative")
+        st.text_input(
+            "Anthropic API key",
+            type="password",
+            placeholder="sk-ant-...",
+            key="user_anthropic_key",
+            label_visibility="collapsed",
+            help="Get a key at console.anthropic.com",
+        )
+        st.caption("[Get a key →](https://console.anthropic.com/settings/keys)")
+    if _ai_available():
+        provider = "Gemini" if (_get_gemini_key() and _GEMINI_AVAILABLE) else "Anthropic"
+        st.success(f"AI features enabled via {provider}.")
 
 ai_assist = st.toggle(
     "✨ AI-assisted setup",
@@ -771,7 +819,7 @@ research_context = st.text_area(
 # ── AI suggestions: auto-run if description was auto-drafted, else show button ──
 if ai_assist and research_context and len(research_context) > 30:
     _has_orcid_kws = bool(st.session_state.keywords)
-    _api_available = bool(_get_anthropic_key() and _ANTHROPIC_AVAILABLE)
+    _api_available = _ai_available()
     _cats_already_suggested = bool(st.session_state.ai_suggested_cats)
 
     # Auto-trigger when profile was imported and description was drafted automatically

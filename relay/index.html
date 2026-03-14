@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>arXiv Digest Relay</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f1e8;
+        --panel: #fffdf8;
+        --text: #1f2933;
+        --muted: #5f6c76;
+        --accent: #1d5b57;
+        --border: #d8d1c6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at top, rgba(29, 91, 87, 0.12), transparent 30%),
+          linear-gradient(180deg, var(--bg), #efe6d7);
+        color: var(--text);
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(100%, 640px);
+        padding: 32px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 18px 48px rgba(31, 41, 51, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 5vw, 2.8rem);
+        line-height: 1.05;
+      }
+
+      p {
+        margin: 0 0 14px;
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      code {
+        padding: 0.15em 0.4em;
+        border-radius: 999px;
+        background: rgba(29, 91, 87, 0.08);
+        color: var(--accent);
+        font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+        font-size: 0.95em;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(29, 91, 87, 0.08);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .status::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #1d5b57;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="status">Relay online</div>
+      <h1>arXiv Digest relay is running</h1>
+      <p>This deployment only exposes the mail relay API used by digest runs.</p>
+      <p>Health check: <code>GET /api/send</code></p>
+      <p>Send endpoint: <code>POST /api/send</code></p>
+    </main>
+  </body>
+</html>

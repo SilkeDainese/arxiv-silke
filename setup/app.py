@@ -2183,10 +2183,12 @@ with st.expander(
         hint = ARXIV_GROUP_HINTS.get(group_name, "")
 
         count_label = f"{n_selected}/{n_total} selected" if n_selected > 0 else ""
-        with st.expander(
+        show_group = st.checkbox(
             f"**{group_name}**" + (f" — {count_label}" if count_label else ""),
-            expanded=(n_selected > 0),
-        ):
+            value=(n_selected > 0),
+            key=f"grp_show_{group_name}",
+        )
+        if show_group:
             if hint:
                 st.caption(f"Include if: {hint}")
 

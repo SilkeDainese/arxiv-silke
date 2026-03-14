@@ -517,7 +517,7 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
         for entry in root.findall("atom:entry", ns):
             try:
                 published_str = entry.find("atom:published", ns).text
-                published = datetime.fromisoformat(published_str.replace("Z", "+00:00")).replace(tzinfo=None)
+                published = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
                 if published < cutoff:
                     continue
 

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import argparse
 import copy
 import json
 import os
+import re
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from digest import (
@@ -21,7 +24,7 @@ from digest import (
 )
 from setup.data import ASTRO_MINI_TRACKS, AU_STUDENT_TELESCOPE_KEYWORDS
 from setup.student_presets import build_au_student_config
-from student_registry import AVAILABLE_STUDENT_PACKAGES, package_labels
+from student_registry import AVAILABLE_STUDENT_PACKAGES, normalise_email, package_labels
 
 STUDENT_REGISTRY_URL = os.environ.get(
     "STUDENT_REGISTRY_URL",
@@ -133,8 +136,25 @@ def make_student_digest_config(base_config: dict[str, Any], subscription: dict[s
     return config
 
 
-def main() -> None:
+def _preview_filename(email: str) -> str:
+    """Return a filesystem-safe preview filename for a student email."""
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "_", normalise_email(email)).strip("._")
+    return f"{safe or 'student'}.html"
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for student batch runs."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--preview", action="store_true", help="Render previews instead of sending email.")
+    parser.add_argument("--preview-dir", default="", help="Directory for HTML previews when using --preview.")
+    parser.add_argument("--recipient", default="", help="Only process one student email.")
+    parser.add_argument("--limit", type=int, default=0, help="Process only the first N active students.")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
     """Fetch one shared AU-student paper pool and send tailored student digests."""
+    args = build_parser().parse_args(argv)
     date_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
     print(f"\n🎓 AU Student Digest — {date_str}")
     print("=" * 50)
@@ -142,10 +162,27 @@ def main() -> None:
     base_config = build_student_base_config()
     subscriptions = fetch_student_subscriptions()
     active_subscriptions = [item for item in subscriptions if item.get("active", True)]
+    if args.recipient:
+        target = normalise_email(args.recipient)
+        active_subscriptions = [
+            item for item in active_subscriptions if normalise_email(item.get("email", "")) == target
+        ]
+        if not active_subscriptions:
+            print(f"\nNo active student subscription found for {target}.\n")
+            return 1
+    if args.limit > 0:
+        active_subscriptions = active_subscriptions[: args.limit]
+
     print(f"\n📬 Loaded {len(active_subscriptions)} active student subscription(s)")
     if not active_subscriptions:
         print("\nNo active student subscriptions. Exiting.\n")
-        return
+        return 0
+
+    preview_dir: Path | None = None
+    if args.preview:
+        preview_dir = Path(args.preview_dir or "student_previews")
+        preview_dir.mkdir(parents=True, exist_ok=True)
+        print(f"\n📝 Preview mode — writing HTML to {preview_dir}")
 
     print("\n📡 Fetching papers from arXiv...")
     papers = fetch_arxiv_papers(base_config)
@@ -162,7 +199,7 @@ def main() -> None:
     annotate_student_packages(ranked_papers)
     print(f"   {len(ranked_papers)} papers available for student selection ({scoring_method})")
 
-    sent_count = 0
+    processed_count = 0
     for subscription in active_subscriptions:
         selected = select_student_papers(
             ranked_papers,
@@ -182,16 +219,26 @@ def main() -> None:
             own_papers=[],
             scoring_method=scoring_method,
         )
-        print(
-            f"\n📧 Sending student digest to {subscription['email']} "
+        summary = (
+            f"{subscription['email']} "
             f"({len(selected)} papers, packages: {', '.join(subscription['package_ids'])})"
         )
-        if not send_email(html, len(selected), date_str, student_config, papers=selected):
-            raise SystemExit(1)
-        sent_count += 1
+        if preview_dir is not None:
+            preview_path = preview_dir / _preview_filename(subscription["email"])
+            preview_path.write_text(html, encoding="utf-8")
+            print(f"\n📝 Wrote preview for {summary} -> {preview_path}")
+        else:
+            print(f"\n📧 Sending student digest to {summary}")
+            if not send_email(html, len(selected), date_str, student_config, papers=selected):
+                return 1
+        processed_count += 1
 
-    print(f"\n✨ Sent {sent_count} student digest(s).\n")
+    if preview_dir is not None:
+        print(f"\n✨ Wrote {processed_count} student preview(s).\n")
+    else:
+        print(f"\n✨ Sent {processed_count} student digest(s).\n")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

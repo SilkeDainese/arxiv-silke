@@ -7,6 +7,7 @@ import argparse
 import getpass
 import json
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -40,6 +41,10 @@ def prompt_secret(text: str) -> str:
         if value:
             return value
         print("Please enter a value.")
+
+
+def prompt_optional_secret(text: str) -> str:
+    return getpass.getpass(f"{text}: ").strip()
 
 
 def prompt_yes_no(text: str, *, default: bool = True) -> bool:
@@ -88,8 +93,21 @@ def post_json(url: str, payload: dict) -> dict:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="ignore")
+        try:
+            payload = json.loads(body)
+            message = payload.get("error", exc.reason)
+        except json.JSONDecodeError:
+            message = body or exc.reason
+        raise RuntimeError(str(message)) from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Could not reach the student registry: {exc.reason}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Student registry returned invalid JSON.") from exc
 
 
 def manage_subscription(registry_url: str) -> int:
@@ -104,12 +122,16 @@ def manage_subscription(registry_url: str) -> int:
     if action == "1":
         packages = select_packages()
         max_papers = prompt("Max papers per week", default=str(DEFAULT_MAX_PAPERS))
+        new_password = prompt_optional_secret(
+            "New password (leave blank to keep current password)"
+        )
         result = post_json(
             registry_url,
             {
                 "action": "upsert",
                 "email": email,
                 "password": password,
+                "new_password": new_password,
                 "package_ids": packages,
                 "max_papers_per_week": int(max_papers),
             },
@@ -153,7 +175,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
-    return manage_subscription(args.registry_url)
+    try:
+        return manage_subscription(args.registry_url)
+    except RuntimeError as exc:
+        print(f"\nError: {exc}")
+        return 1
 
 
 if __name__ == "__main__":

@@ -103,6 +103,7 @@ def _handle_upsert(body: dict[str, Any]) -> dict[str, Any]:
     record = build_student_record(
         email=email,
         password=str(body.get("password", "")),
+        new_password=str(body.get("new_password", "")),
         package_ids=body.get("package_ids", []),
         max_papers_per_week=body.get("max_papers_per_week", DEFAULT_MAX_PAPERS),
         existing=existing,
@@ -295,6 +296,9 @@ def _manage_page(email: str, mode: str) -> str:
         <label>Password
           <input id="password" type="password" placeholder="Your student digest password">
         </label>
+        <label>New password (optional)
+          <input id="new_password" type="password" placeholder="Leave blank to keep your current password">
+        </label>
         <label>Max papers per week
           <input id="max_papers" type="number" min="1" max="20" value="{DEFAULT_MAX_PAPERS}">
         </label>
@@ -339,6 +343,7 @@ def _manage_page(email: str, mode: str) -> str:
           action,
           email: document.getElementById("email").value,
           password: document.getElementById("password").value,
+          new_password: document.getElementById("new_password").value,
           max_papers_per_week: Number(document.getElementById("max_papers").value || "{DEFAULT_MAX_PAPERS}"),
           package_ids: selectedPackages(),
         }};
@@ -372,6 +377,7 @@ def _manage_page(email: str, mode: str) -> str:
           const data = await callApi("upsert");
           setPackages(data.subscription.package_ids);
           document.getElementById("max_papers").value = data.subscription.max_papers_per_week;
+          document.getElementById("new_password").value = "";
           setStatus("Saved. Your next weekly digest will use these packages.");
         }} catch (error) {{
           setStatus(error.message, true);

@@ -108,6 +108,7 @@ def build_student_record(
     *,
     email: str,
     password: str,
+    new_password: str | None = None,
     package_ids: Any,
     max_papers_per_week: Any,
     existing: dict[str, Any] | None = None,
@@ -118,6 +119,7 @@ def build_student_record(
         raise ValueError("Email is required.")
     packages = normalise_package_ids(package_ids)
     max_papers = clamp_max_papers(max_papers_per_week)
+    replacement_password = str(new_password or "").strip()
     timestamp = now_iso()
 
     if existing:
@@ -125,8 +127,11 @@ def build_student_record(
         digest_hex = str(existing.get("password_hash", "")).strip()
         if not verify_password(password, salt_hex, digest_hex):
             raise PermissionError("Incorrect password.")
-        password_salt = salt_hex
-        password_hash = digest_hex
+        if replacement_password:
+            password_salt, password_hash = hash_password(replacement_password)
+        else:
+            password_salt = salt_hex
+            password_hash = digest_hex
         created_at = existing.get("created_at") or timestamp
     else:
         password_salt, password_hash = hash_password(password)

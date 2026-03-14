@@ -1,3 +1,4 @@
+import student_digest as sd
 from digest import _render_footer
 from student_digest import annotate_student_packages, make_student_digest_config, select_student_papers
 from student_registry import (
@@ -58,6 +59,27 @@ def test_build_student_record_requires_correct_password_for_updates():
 
     assert updated["package_ids"] == ["stars", "galaxies"]
     assert updated["max_papers_per_week"] == 4
+
+
+def test_build_student_record_can_rotate_password():
+    original = build_student_record(
+        email="student@example.com",
+        password="old-password",
+        package_ids=["exoplanets"],
+        max_papers_per_week=6,
+    )
+
+    updated = build_student_record(
+        email="student@example.com",
+        password="old-password",
+        new_password="new-password",
+        package_ids=["stars"],
+        max_papers_per_week=5,
+        existing=original,
+    )
+
+    assert verify_password("new-password", updated["password_salt"], updated["password_hash"])
+    assert not verify_password("old-password", updated["password_salt"], updated["password_hash"])
 
 
 def test_normalise_package_ids_rejects_empty():
@@ -137,3 +159,54 @@ def test_footer_uses_student_manage_links_when_present():
     assert "Change packages" in footer
     assert "Manage subscription" in footer
     assert "Unsubscribe" in footer
+
+
+def test_student_digest_preview_writes_html(tmp_path, monkeypatch):
+    subscriptions = [
+        {
+            "email": "student@example.com",
+            "package_ids": ["exoplanets"],
+            "max_papers_per_week": 2,
+            "active": True,
+        },
+        {
+            "email": "inactive@example.com",
+            "package_ids": ["stars"],
+            "max_papers_per_week": 2,
+            "active": False,
+        },
+    ]
+    papers = [
+        make_paper(
+            id="student-paper",
+            matched_keywords=["exoplanet"],
+            relevance_score=8,
+        )
+    ]
+    sent = []
+
+    monkeypatch.setattr(sd, "fetch_student_subscriptions", lambda: subscriptions)
+    monkeypatch.setattr(sd, "fetch_arxiv_papers", lambda config: papers)
+    monkeypatch.setattr(sd, "ingest_feedback_from_github", lambda config: {})
+    monkeypatch.setattr(sd, "apply_feedback_bias", lambda papers, feedback_stats: None)
+    monkeypatch.setattr(sd, "pre_filter", lambda papers: papers)
+    monkeypatch.setattr(sd, "analyse_papers", lambda papers, config: (papers, "keywords"))
+    monkeypatch.setattr(
+        sd,
+        "render_html",
+        lambda papers, colleague_papers, config, date_str, own_papers, scoring_method: (
+            f"{config['recipient_email']}:{len(papers)}"
+        ),
+    )
+    monkeypatch.setattr(
+        sd,
+        "send_email",
+        lambda html, paper_count, date_str, config, papers=None: sent.append(config["recipient_email"]) or True,
+    )
+
+    exit_code = sd.main(["--preview", "--preview-dir", str(tmp_path), "--recipient", "student@example.com"])
+
+    assert exit_code == 0
+    assert sent == []
+    preview_path = tmp_path / "student_example.com.html"
+    assert preview_path.read_text(encoding="utf-8") == "student@example.com:1"

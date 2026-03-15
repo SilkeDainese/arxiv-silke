@@ -487,12 +487,13 @@ def _manage_page(
           setPackages(data.subscription.package_ids);
           document.getElementById("max_papers").value = data.subscription.max_papers_per_week;
           document.getElementById("new_password").value = "";
+          const confirmationMessage = "Confirmed. First digest will arrive next Monday at 07:00 UTC.";
           if (data.confirmation_email_sent) {{
-            setStatus("Saved. A confirmation email has been sent.");
+            setStatus(confirmationMessage + " A confirmation email has been sent.");
           }} else if (data.confirmation_email_error) {{
-            setStatus("Saved, but the confirmation email could not be sent: " + data.confirmation_email_error, true);
+            setStatus(confirmationMessage + " Confirmation email could not be sent: " + data.confirmation_email_error, true);
           }} else {{
-            setStatus("Saved. Your next weekly digest will use these packages.");
+            setStatus(confirmationMessage);
           }}
         }} catch (error) {{
           setStatus(error.message, true);

@@ -150,4 +150,5 @@ def test_manage_page_includes_password_rotation_field():
     assert "Enter your password and click Unsubscribe." in page
     assert 'const initialPackages = ["stars", "galaxies"]' in page
     assert "const initialMaxPapers = 4" in page
+    assert "Confirmed. First digest will arrive next Monday at 07:00 UTC." in page
     assert "A confirmation email has been sent." in page

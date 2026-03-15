@@ -36,6 +36,10 @@ STUDENT_REGISTRY_URL = os.environ.get(
     "https://arxiv-digest-relay.vercel.app/api/students",
 ).strip()
 STUDENT_MANAGE_URL = os.environ.get("STUDENT_MANAGE_URL", STUDENT_REGISTRY_URL).strip()
+FEEDBACK_RELAY_URL = os.environ.get(
+    "FEEDBACK_RELAY_URL",
+    "https://arxiv-digest-relay.vercel.app/api/feedback",
+).strip()
 
 
 def build_student_base_config() -> dict[str, Any]:
@@ -80,6 +84,78 @@ def fetch_student_subscriptions() -> list[dict[str, Any]]:
     return subscriptions
 
 
+def fetch_aggregate_feedback() -> dict[str, dict[str, Any]]:
+    """Fetch aggregate expert votes from the central feedback store.
+
+    Returns a dict mapping paper_id -> {up, down, net, keywords, ...}.
+    Returns empty dict on error or when admin token is not set.
+    """
+    admin_token = os.environ.get("STUDENT_ADMIN_TOKEN", "").strip()
+    if not admin_token:
+        return {}
+
+    payload = json.dumps(
+        {"action": "aggregate", "admin_token": admin_token}
+    ).encode("utf-8")
+    try:
+        request = urllib.request.Request(
+            FEEDBACK_RELAY_URL,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        return data.get("aggregated", {})
+    except Exception as exc:
+        print(f"   ⚠️  Could not fetch aggregate feedback: {exc}")
+        return {}
+
+
+def apply_aggregate_expert_signal(
+    papers: list[dict[str, Any]], aggregated: dict[str, dict[str, Any]]
+) -> None:
+    """Annotate papers with aggregate expert up/down signal.
+
+    Sets paper["expert_net"] from direct paper_id matches, plus
+    keyword-level signal from keyword_signal:* entries.
+    """
+    if not aggregated:
+        return
+
+    # Build a keyword-level signal map from keyword_signal:* entries
+    keyword_signal: dict[str, int] = {}
+    for key, agg in aggregated.items():
+        if key.startswith("keyword_signal:"):
+            kw = key.removeprefix("keyword_signal:")
+            keyword_signal[kw] = agg.get("net", 0)
+
+    for paper in papers:
+        # Direct paper match
+        direct = aggregated.get(paper.get("id", ""), {})
+        net = direct.get("net", 0)
+
+        # Add keyword-level signal from opted-in researchers
+        matched = paper.get("matched_keywords") or []
+        for kw in matched:
+            net += keyword_signal.get(kw.lower(), 0)
+
+        paper["expert_net"] = net
+
+
+def _freshness_score(paper: dict[str, Any]) -> float:
+    """Return a 0-1 freshness score based on published date (1.0 = today)."""
+    published = paper.get("published", "")
+    if not published:
+        return 0.0
+    try:
+        pub_date = datetime.fromisoformat(published.replace("Z", "+00:00"))
+        age_days = (datetime.now(timezone.utc) - pub_date).total_seconds() / 86400
+        return max(0.0, 1.0 - age_days / 7.0)
+    except (ValueError, TypeError):
+        return 0.0
+
+
 def annotate_student_packages(papers: list[dict[str, Any]]) -> None:
     """Annotate papers with matching student packages and AU-priority flags."""
     track_keywords = {
@@ -111,19 +187,29 @@ def annotate_student_packages(papers: list[dict[str, Any]]) -> None:
 def select_student_papers(
     papers: list[dict[str, Any]], package_ids: list[str], max_papers_per_week: int
 ) -> list[dict[str, Any]]:
-    """Return the ranked top papers for a student subscription."""
+    """Return the ranked top papers for a student subscription.
+
+    Ranking uses four weighted signals (highest priority first):
+      1. AU relevance boost — AU telescopes, colleagues (binary)
+      2. Package/topic match — number of overlapping packages
+      3. Aggregate expert signal — net up/down votes from opted-in researchers
+      4. Freshness — newer papers rank higher among ties
+
+    The AI relevance_score is also folded in as the base quality signal.
+    """
+    wanted = set(package_ids)
     selected = [
         paper
         for paper in papers
-        if set(paper.get("student_package_ids", [])).intersection(package_ids)
+        if set(paper.get("student_package_ids", [])).intersection(wanted)
     ]
     selected.sort(
         key=lambda paper: (
-            paper.get("student_au_priority", 0),
-            paper.get("relevance_score", 0),
-            len(set(paper.get("student_package_ids", [])).intersection(package_ids)),
-            paper.get("feedback_bias", 0),
-            paper.get("published", ""),
+            paper.get("student_au_priority", 0),                              # AU boost
+            paper.get("relevance_score", 0),                                  # AI quality
+            len(set(paper.get("student_package_ids", [])).intersection(wanted)),  # package overlap
+            paper.get("expert_net", 0),                                       # aggregate expert signal
+            _freshness_score(paper),                                          # freshness
         ),
         reverse=True,
     )
@@ -205,9 +291,17 @@ def main(argv: list[str] | None = None) -> int:
     print("\n🔍 Pre-filtering shared AU student pool...")
     candidates = pre_filter(papers)
 
+    print("\n🗳️  Fetching aggregate expert votes...")
+    aggregated = fetch_aggregate_feedback()
+    if aggregated:
+        print(f"   {len(aggregated)} paper/keyword signals loaded")
+    else:
+        print("   No aggregate feedback available (will rank without expert signal)")
+
     print("\n🤖 Analysing shared AU student pool...")
     ranked_papers, scoring_method = analyse_papers(candidates, base_config)
     annotate_student_packages(ranked_papers)
+    apply_aggregate_expert_signal(ranked_papers, aggregated)
     print(f"   {len(ranked_papers)} papers available for student selection ({scoring_method})")
 
     processed_count = 0

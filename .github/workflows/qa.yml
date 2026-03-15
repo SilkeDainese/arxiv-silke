@@ -27,7 +27,7 @@ jobs:
         run: python -m pytest -q
 
       - name: Compile Python entrypoints
-        run: python -m py_compile digest.py student_digest.py student_registry.py setup/app.py setup/pure_scraper.py setup/student_presets.py scripts/student_subscription.py scripts/student_admin.py relay/api/students.py brand.py
+        run: python -m py_compile digest.py student_digest.py student_registry.py setup/app.py setup/pure_scraper.py setup/student_presets.py scripts/student_subscription.py scripts/student_admin.py relay/api/students.py relay/api/feedback.py brand.py
 
       - name: Install setup wizard dependencies
         run: pip install -r setup/requirements.txt

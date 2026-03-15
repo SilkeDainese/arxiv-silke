@@ -87,6 +87,7 @@ def load_config() -> dict[str, Any]:
     cfg.setdefault("self_match", [])  # patterns to match YOUR name in author lists
     cfg.setdefault("keyword_aliases", {})  # optional keyword -> [similar phrases]
     cfg.setdefault("own_api_key", False)  # set True when user adds their own AI key
+    cfg.setdefault("allow_feedback_for_students", False)  # mirror votes to central store
 
     # ── Existing fields with defaults ──
     cfg.setdefault("categories", ["astro-ph.EP", "astro-ph.SR", "astro-ph.GA"])
@@ -470,6 +471,91 @@ def apply_feedback_bias(papers: list[dict[str, Any]], feedback_stats: dict[str, 
         matched = paper.get("matched_keywords") or []
         bias = sum(int(pref.get(kw.lower(), 0)) for kw in matched)
         paper["feedback_bias"] = bias
+
+
+def mirror_feedback_to_central(
+    feedback_stats: dict[str, Any], config: dict[str, Any]
+) -> int:
+    """Mirror opted-in researcher votes to the central feedback store.
+
+    Only runs when config has allow_feedback_for_students: true.
+    Sends anonymised keyword-level votes — no researcher identity is transmitted.
+    Returns the number of votes accepted by the central store, or 0 on skip/error.
+    """
+    if not config.get("allow_feedback_for_students"):
+        return 0
+
+    relay_url = os.environ.get(
+        "FEEDBACK_RELAY_URL",
+        "https://arxiv-digest-relay.vercel.app/api/feedback",
+    ).strip()
+    relay_token = os.environ.get("FEEDBACK_RELAY_TOKEN", "").strip()
+    if not relay_token:
+        return 0
+
+    keyword_feedback = feedback_stats.get("keyword_feedback", {})
+    if not keyword_feedback:
+        return 0
+
+    # Build anonymised votes from keyword-level preference deltas.
+    # Each keyword with a non-zero bias becomes an up or down vote
+    # attributed to a synthetic "keyword" paper_id so the central
+    # store can aggregate the signal without knowing individual papers.
+    votes: list[dict[str, Any]] = []
+    categories = config.get("categories", [])
+    package_tags = _categories_to_package_tags(categories)
+
+    for keyword, bias in keyword_feedback.items():
+        if bias == 0:
+            continue
+        votes.append({
+            "paper_id": f"keyword_signal:{keyword}",
+            "vote": "up" if bias > 0 else "down",
+            "keywords": [keyword],
+            "package_tags": package_tags,
+        })
+
+    if not votes:
+        return 0
+
+    payload = json.dumps({
+        "action": "submit",
+        "token": relay_token,
+        "votes": votes,
+    }).encode("utf-8")
+
+    try:
+        request = urllib.request.Request(
+            relay_url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        accepted = data.get("accepted", 0)
+        if accepted:
+            print(f"  🔄 Mirrored {accepted} keyword vote(s) to central student store")
+        return accepted
+    except Exception as exc:
+        print(f"  ⚠️  Could not mirror feedback to central store: {exc}")
+        return 0
+
+
+def _categories_to_package_tags(categories: list[str]) -> list[str]:
+    """Map arXiv categories to broad student package tags."""
+    tag_map = {
+        "astro-ph.EP": "exoplanets",
+        "astro-ph.SR": "stars",
+        "astro-ph.GA": "galaxies",
+        "astro-ph.CO": "cosmology",
+    }
+    tags: list[str] = []
+    for cat in categories:
+        tag = tag_map.get(cat)
+        if tag and tag not in tags:
+            tags.append(tag)
+    return tags
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1675,6 +1761,7 @@ def main() -> None:
     print("\n👍 Ingesting quick-feedback votes...")
     feedback_stats = ingest_feedback_from_github(config)
     apply_feedback_bias(papers, feedback_stats)
+    mirror_feedback_to_central(feedback_stats, config)
 
     # Track keyword performance
     print("\n📊 Updating keyword stats...")

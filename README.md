@@ -16,37 +16,41 @@ I built this for myself — I am a PhD student in astronomy at Aarhus University
 
 Three steps. No terminal needed.
 
-### 1. Generate your config
+> [!TIP]
+> ### Step 1 — Describe your research
+> **[Open the config page →](https://arxiv-digest-setup.streamlit.app)**
+>
+> Fill in your name, research interests, keywords, and email address. The page generates a config file — download it.
 
-**[Open the setup wizard →](https://arxiv-digest-setup.streamlit.app)**
+> [!NOTE]
+> ### Step 2 — Get your own copy
+> **[Fork this repo →](https://github.com/SilkeDainese/arxiv-digest/fork)**
+>
+> This creates your personal copy on GitHub. Everything runs there — nothing is shared back.
 
-Fill in your name, research description, keywords, and email address. Download the `config.yaml` file it generates.
+> [!IMPORTANT]
+> ### Step 3 — Connect and launch
+>
+> **Upload your config:**
+> **Add file → Upload files** → drag in the config file → **Commit changes**
+>
+> **Add your secrets:**
+> **Settings → Secrets and variables → Actions**
+> &ensp; → **New repository secret** → name: `RECIPIENT_EMAIL`, value: your email address
+> &ensp; → **New repository secret** → name: `DIGEST_RELAY_TOKEN`, value: the token from the config page
+>
+> **Start the first run:**
+> **Actions** tab → enable workflows → **arXiv Digest** → **Run workflow**
 
-### 2. Fork this repo
+**That's it.** Your digest now runs automatically **Mon/Wed/Fri at 9am Danish time**. Papers show up in your inbox — no further action needed.
 
-**[Fork arXiv Digest →](https://github.com/SilkeDainese/arxiv-digest/fork)**
-
-This creates your own copy. Everything runs in your fork — nothing is shared back.
-
-### 3. Upload your config, add secrets, and run
-
-In your fork: **Add file → Upload files** → drag in `config.yaml` → **Commit changes**.
-
-Now add your secrets. Go to **Settings → Secrets and variables → Actions → New repository secret** and add:
-
-- `RECIPIENT_EMAIL` — your email address
-- `DIGEST_RELAY_TOKEN` — the token from the setup wizard (if you got an invite code)
-
-> **No invite code?** Use your own email account instead: add `SMTP_USER` (your email) and `SMTP_PASSWORD` ([Gmail App Password →](https://myaccount.google.com/apppasswords)) instead of the relay token.
-
-Finally: **Actions** tab → enable workflows → **arXiv Digest** → **Run workflow**.
-
-**That's it.** Your digest now runs automatically **Mon/Wed/Fri at 9am Danish time**.
+> [!NOTE]
+> **No invite code?** You can send from your own email instead — add `SMTP_USER` and `SMTP_PASSWORD` ([Gmail App Password →](https://myaccount.google.com/apppasswords)) as secrets instead of the relay token.
 
 <details>
 <summary>Prefer a terminal flow?</summary>
 
-Run `python -m scripts.friend_setup` from a checkout of this repo. It opens the setup wizard, waits for `config.yaml` in Downloads, forks the repo, uploads the config, and enables Actions.
+Run `python -m scripts.friend_setup` from a checkout of this repo. It opens the config page, waits for the file in Downloads, forks the repo, uploads the config, and enables Actions.
 
 </details>
 

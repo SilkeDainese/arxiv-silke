@@ -28,16 +28,16 @@ This creates your personal copy on GitHub. Everything runs there — nothing is 
 
 ### 3. Connect and launch
 
-Upload your config:
-`Add file` → `Upload files` → drag in the config file → `Commit changes`
+1. Upload your config file:
+   `Add file` → `Upload files` → drag in the config file → `Commit changes`
 
-Add your secrets:
-`Settings` → `Secrets and variables` → `Actions`
-&ensp; → `New repository secret` → name: `RECIPIENT_EMAIL`, value: your email address
-&ensp; → `New repository secret` → name: `DIGEST_RELAY_TOKEN`, value: the token from the config page
+2. Add two [repository secrets](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions):
+   `Settings` → `Secrets and variables` → `Actions` → `New repository secret`
+   - `RECIPIENT_EMAIL` — your email address
+   - `DIGEST_RELAY_TOKEN` — the token from the config page
 
-Start the first run:
-`Actions` tab → enable workflows → `arXiv Digest` → `Run workflow`
+3. Run it:
+   `Actions` tab → enable workflows → `arXiv Digest` → `Run workflow`
 
 **That's it.** Your digest now runs automatically Mon/Wed/Fri at 9am Danish time. Papers show up in your inbox — no further action needed.
 

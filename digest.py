@@ -1415,6 +1415,21 @@ def _render_own_key_nudge(config: dict[str, Any], scoring_method: str) -> str:
   </td></tr>"""
 
 
+def _render_report_link(github_repo: str) -> str:
+    """Return a small 'Something wrong?' link pointing to a pre-filled GitHub issue."""
+    if not github_repo:
+        return ""
+    repo_name = github_repo.split("/")[-1] if "/" in github_repo else github_repo
+    issue_url = (
+        "https://github.com/SilkeDainese/arxiv-digest/issues/new"
+        f"?title=Digest+issue&body=Fork:+{urllib.parse.quote(repo_name)}"
+    )
+    return f"""
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:{WARM_GREY};letter-spacing:0.08em;text-align:center;margin-top:10px">
+      Something wrong? <a href="{issue_url}" style="color:{PINE};text-decoration:none">Report an issue &#x2192;</a>
+    </div>"""
+
+
 def _render_footer(config: dict[str, Any], scoring_method: str) -> str:
     """Return the email footer HTML including self-service links and credits."""
     digest_name = config.get("digest_name", "arXiv Digest")
@@ -1487,6 +1502,7 @@ def _render_footer(config: dict[str, Any], scoring_method: str) -> str:
       <a href="mailto:dainese@phys.au.dk" style="color:{WARM_GREY};text-decoration:none">dainese@phys.au.dk</a> &middot;
       <a href="https://github.com/SilkeDainese" style="color:{WARM_GREY};text-decoration:none">github.com/SilkeDainese</a>
     </div>
+    {_render_report_link(github_repo)}
   </td></tr>"""
 
 
@@ -1752,11 +1768,19 @@ def main() -> None:
     print("=" * 50)
 
     print("\n📋 Loading config.yaml...")
-    config = load_config()
+    try:
+        config = load_config()
+    except (FileNotFoundError, yaml.YAMLError) as exc:
+        print(f"\n❌ Config error: {exc}")
+        raise SystemExit(1) from None
     print(f"   {len(config['keywords'])} keywords, {len(config['research_authors'])} research authors, {len(config['colleagues']['people'])} colleagues, view mode: {config['recipient_view_mode']}")
 
     print("\n📡 Fetching papers from arXiv...")
-    papers = fetch_arxiv_papers(config)
+    try:
+        papers = fetch_arxiv_papers(config)
+    except Exception as exc:
+        print(f"\n❌ arXiv fetch failed: {exc}")
+        raise SystemExit(1) from None
 
     print("\n👍 Ingesting quick-feedback votes...")
     feedback_stats = ingest_feedback_from_github(config)
@@ -1803,9 +1827,16 @@ def main() -> None:
         print("   Opened in your browser. No email sent.")
     else:
         print("\n📧 Sending email...")
-        if not send_email(html, total_count, date_str, config, papers=final_papers):
-            print("\n❌ Email delivery failed.")
-            raise SystemExit(1)
+        try:
+            if not send_email(html, total_count, date_str, config, papers=final_papers):
+                print("\n❌ Email delivery failed.")
+                raise SystemExit(1)
+        except SystemExit:
+            raise
+        except Exception as exc:
+            print(f"\n❌ Email send error: {exc}")
+            print(f"   HTML saved to {output_path}")
+            raise SystemExit(1) from None
 
     print("\n✨ Done!\n")
 

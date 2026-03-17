@@ -49,7 +49,7 @@ Three steps. No terminal needed.
 ### Setup
 
 <details>
-<summary><strong>I'm a student — is there an easier way?</strong></summary>
+<summary>I'm a student — is there an easier way?</summary>
 
 Yes. On the config page, choose the **student mini-setup**. It gives you pre-built interest packages (exoplanets, stars, galaxies, cosmology) with sensible defaults and a lighter weekly schedule. You can customise it later.
 
@@ -58,7 +58,7 @@ If you're from a field other than astronomy and would like similar packages, [wr
 </details>
 
 <details>
-<summary><strong>What if I don't have an invite code?</strong></summary>
+<summary>What if I don't have an invite code?</summary>
 
 You can send digests from your own email instead. Add these secrets instead of the relay token:
 
@@ -70,14 +70,14 @@ Outlook users: also set `smtp_server: "smtp.office365.com"` in your config file.
 </details>
 
 <details>
-<summary><strong>Do I need an API key?</strong></summary>
+<summary>Do I need an API key?</summary>
 
 No. Keyword scoring works without any key. AI keys make the ranking smarter — add one later from [Google AI Studio](https://aistudio.google.com/apikey) (free) or [Anthropic Console](https://console.anthropic.com/). Add it as a repo secret, same way you added your other secrets.
 
 </details>
 
 <details>
-<summary><strong>Can I use the terminal to set up instead?</strong></summary>
+<summary>Can I use the terminal to set up instead?</summary>
 
 Run `python -m scripts.friend_setup` from a checkout of this repo. It opens the config page, waits for the file in Downloads, forks the repo, uploads the config, and enables Actions.
 
@@ -86,7 +86,7 @@ Run `python -m scripts.friend_setup` from a checkout of this repo. It opens the 
 ### How it works
 
 <details>
-<summary><strong>How does scoring work?</strong></summary>
+<summary>How does scoring work?</summary>
 
 You describe your research in the config file — keywords, field, a free-text description of your work, and optionally your collaborators. The digest scores every new arXiv paper in three steps:
 
@@ -116,7 +116,7 @@ If one tier fails, the next takes over. You always get a digest.
 </details>
 
 <details>
-<summary><strong>How does the feedback loop work?</strong></summary>
+<summary>How does the feedback loop work?</summary>
 
 When you click ↑ or ↓ on a paper card in your digest email, it creates a GitHub issue in your fork. The next run reads those issues automatically — upvoted keywords get a scoring boost, downvoted ones get dampened. The system learns what you care about over time.
 
@@ -127,14 +127,14 @@ To enable feedback arrows, set `github_repo: "yourusername/arxiv-digest"` in you
 ### Using your digest
 
 <details>
-<summary><strong>Can I change the schedule?</strong></summary>
+<summary>Can I change the schedule?</summary>
 
 Yes — edit the cron line in `.github/workflows/digest.yml`. The default is Mon/Wed/Fri at 9am Danish time.
 
 </details>
 
 <details>
-<summary><strong>How do I pause or unsubscribe?</strong></summary>
+<summary>How do I pause or unsubscribe?</summary>
 
 - **Pause:** Go to your repo → **Actions** → **arXiv Digest** → click **⋯** → **Disable workflow**
 - **Delete:** Go to your repo → **Settings** → scroll to Danger Zone → **Delete this repository**
@@ -144,7 +144,7 @@ Every digest email also includes self-service links at the bottom (edit interest
 </details>
 
 <details>
-<summary><strong>What can I customise?</strong></summary>
+<summary>What can I customise?</summary>
 
 See [`config.example.yaml`](config.example.yaml) for all options with inline comments. Key fields:
 
@@ -162,7 +162,7 @@ See [`config.example.yaml`](config.example.yaml) for all options with inline com
 </details>
 
 <details>
-<summary><strong>Can I run it locally?</strong></summary>
+<summary>Can I run it locally?</summary>
 
 ```bash
 pip install -r requirements.txt

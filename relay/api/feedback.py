@@ -19,6 +19,7 @@ FEEDBACK_PATH = os.environ.get("FEEDBACK_STORAGE_PATH", "feedback/votes.json").s
 STORAGE_BRANCH = os.environ.get("STUDENT_STORAGE_BRANCH", "main").strip()
 FEEDBACK_RELAY_TOKEN = os.environ.get("FEEDBACK_RELAY_TOKEN", "").strip()
 STUDENT_ADMIN_TOKEN = os.environ.get("STUDENT_ADMIN_TOKEN", "").strip()
+_MAX_VOTES = 10_000
 
 
 def _github_request(method: str, url: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -147,6 +148,10 @@ def _handle_submit(body: dict[str, Any]) -> dict[str, Any]:
 
     if accepted == 0:
         raise ValueError("No valid votes in the batch.")
+
+    # Keep the store bounded — drop oldest votes when over the cap
+    if len(store["votes"]) > _MAX_VOTES:
+        store["votes"] = store["votes"][-_MAX_VOTES:]
 
     _reaggregate(store)
     _save_feedback_store(store, sha, f"Add {accepted} feedback vote(s)")

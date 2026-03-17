@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -17,8 +18,12 @@ STORAGE_REPO = os.environ.get("STUDENT_STORAGE_REPO", "").strip()
 REPORT_PATH = os.environ.get("REPORT_STORAGE_PATH", "reports/failures.json").strip()
 STORAGE_BRANCH = os.environ.get("STUDENT_STORAGE_BRANCH", "main").strip()
 UPSTREAM_REPO = os.environ.get("UPSTREAM_REPO", "SilkeDainese/arxiv-digest").strip()
+REPORT_RELAY_TOKEN = os.environ.get("REPORT_RELAY_TOKEN", "").strip()
 
 REQUIRED_FIELDS = ("repo", "run_id", "error", "timestamp", "workflow")
+_REPO_RE = re.compile(r"^[A-Za-z0-9_.\-]{1,100}/[A-Za-z0-9_.\-]{1,100}$")
+_MAX_STORE_ENTRIES = 500
+_MAX_ERROR_LEN = 2000
 
 
 def _github_request(method: str, url: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -76,6 +81,13 @@ def _save_report_store(store: list[dict[str, Any]], sha: str | None, message: st
     _github_request("PUT", url, payload)
 
 
+def _sanitise_error(error: str) -> str:
+    """Truncate and escape the error string so it can't break GitHub markdown."""
+    truncated = error[:_MAX_ERROR_LEN]
+    # Replace triple backticks to prevent breaking out of the code fence
+    return truncated.replace("```", "'''")
+
+
 def _create_issue(repo: str, run_id: str, error: str, workflow: str) -> str:
     """Create a GitHub issue on the upstream repo and return its URL."""
     run_link = f"https://github.com/{repo}/actions/runs/{run_id}"
@@ -84,7 +96,7 @@ def _create_issue(repo: str, run_id: str, error: str, workflow: str) -> str:
         f"**Fork:** `{repo}`\n"
         f"**Workflow:** `{workflow}`\n"
         f"**Run:** {run_link}\n\n"
-        f"```\n{error}\n```"
+        f"```\n{_sanitise_error(error)}\n```"
     )
     url = f"{GITHUB_API}/repos/{UPSTREAM_REPO}/issues"
     result = _github_request("POST", url, {"title": title, "body": body})
@@ -93,6 +105,14 @@ def _create_issue(repo: str, run_id: str, error: str, workflow: str) -> str:
 
 def _handle_report(body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     """Validate, store, and file an issue for a failure report."""
+    # Optional token guard: if REPORT_RELAY_TOKEN is configured on the relay,
+    # callers must supply it. Forks without it silently succeed with no storage/issue.
+    if REPORT_RELAY_TOKEN:
+        if str(body.get("token", "")).strip() != REPORT_RELAY_TOKEN:
+            # Return 200 so fork workflows don't flag a failure on mis-config,
+            # but do nothing — this prevents unauthenticated abuse when token is set.
+            return 200, {"ok": True, "skipped": "token required"}
+
     missing = [f for f in REQUIRED_FIELDS if not str(body.get(f, "")).strip()]
     if missing:
         return 400, {"error": f"Missing required fields: {', '.join(missing)}"}
@@ -103,18 +123,30 @@ def _handle_report(body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     workflow = str(body["workflow"]).strip()
     timestamp = str(body["timestamp"]).strip()
 
-    # Store the failure report
+    # Reject obviously invalid repo or run_id formats
+    if not _REPO_RE.match(repo):
+        return 400, {"error": "Invalid repo format (expected owner/name)."}
+    if not re.match(r"^\d{1,20}$", run_id):
+        return 400, {"error": "Invalid run_id format (expected numeric)."}
+
     store, sha = _load_report_store()
+
+    # Deduplicate: don't create a second issue for the same (repo, run_id)
+    if any(r.get("repo") == repo and r.get("run_id") == run_id for r in store):
+        return 200, {"ok": True, "skipped": "already reported"}
+
     store.append({
         "repo": repo,
         "run_id": run_id,
-        "error": error,
+        "error": error[:_MAX_ERROR_LEN],
         "workflow": workflow,
         "timestamp": timestamp,
     })
+    # Keep the store bounded — drop oldest entries when over the cap
+    if len(store) > _MAX_STORE_ENTRIES:
+        store = store[-_MAX_STORE_ENTRIES:]
     _save_report_store(store, sha, f"Add failure report from {repo}")
 
-    # Create upstream issue
     issue_url = _create_issue(repo, run_id, error, workflow)
 
     return 200, {"ok": True, "issue_url": issue_url}

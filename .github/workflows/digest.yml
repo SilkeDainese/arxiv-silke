@@ -112,7 +112,7 @@ jobs:
           stats = pathlib.Path('keyword_stats.json')
           if stats.exists():
               data = json.loads(stats.read_text())
-              print(sum(1 for v in data.values() if v.get('last_hit_date','')))
+              print(sum(1 for v in data.values() if v.get('last_hit','')))
           else:
               print('?')
           " 2>/dev/null || echo "?")

@@ -152,3 +152,42 @@ def test_manage_page_includes_password_rotation_field():
     assert "const initialMaxPapers = 4" in page
     assert "Confirmed. First digest will arrive next Monday at 07:00 UTC." in page
     assert "A confirmation email has been sent." in page
+
+
+# ─────── Email validation tests ──────────────────────────────
+
+class TestNormaliseEmail:
+    """normalise_email now validates format."""
+
+    def test_valid_email_is_normalised(self):
+        assert students_api.normalise_email("User@Example.COM") == "user@example.com"
+
+    def test_email_without_at_raises(self):
+        with pytest.raises(ValueError, match="Invalid email"):
+            students_api.normalise_email("notanemail")
+
+    def test_email_without_domain_tld_raises(self):
+        with pytest.raises(ValueError, match="Invalid email"):
+            students_api.normalise_email("user@nodot")
+
+    def test_empty_string_returns_empty(self):
+        # Empty string is allowed — upstream callers reject it separately
+        assert students_api.normalise_email("") == ""
+
+    def test_upsert_with_invalid_email_raises_value_error(self, monkeypatch):
+        # ValueError propagates from _dispatch; the HTTP handler converts it to 400.
+        monkeypatch.setattr(students_api, "_load_registry", lambda: ({"students": {}}, None))
+        monkeypatch.setattr(students_api, "_save_registry", lambda *a: None)
+        monkeypatch.setattr(
+            students_api,
+            "_send_subscription_confirmation",
+            lambda *a, **kw: (False, None),
+        )
+        with pytest.raises(ValueError, match="Invalid email"):
+            students_api._dispatch({
+                "action": "upsert",
+                "email": "notanemail",
+                "password": "pw123",
+                "package_ids": ["stars"],
+                "max_papers_per_week": 5,
+            })

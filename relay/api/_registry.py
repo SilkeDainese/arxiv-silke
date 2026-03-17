@@ -10,8 +10,11 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import re
 from datetime import datetime, timezone
 from typing import Any
+
+_EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
 
 # ─────── Package definitions (synced from setup/data.py) ──────
 
@@ -41,7 +44,10 @@ def now_iso() -> str:
 
 
 def normalise_email(email: str) -> str:
-    return " ".join(str(email).split()).strip().lower()
+    normalised = " ".join(str(email).split()).strip().lower()
+    if normalised and not _EMAIL_RE.match(normalised):
+        raise ValueError(f"Invalid email address: {normalised!r}")
+    return normalised
 
 
 def package_labels() -> dict[str, str]:

@@ -2,9 +2,9 @@
 
 **Your personal arXiv paper curator** — fetches new papers, scores them against your research, and delivers a digest to your inbox.
 
-Created by [Silke S. Dainese](https://silkedainese.github.io) · [dainese@phys.au.dk](mailto:dainese@phys.au.dk) · [ORCID](https://orcid.org/0009-0001-7885-2439)
+I built this during my PhD in astronomy at Aarhus University to stay on top of new papers without doomscrolling arXiv. Others found it useful, so I made it public — it works for anyone whose papers are on arXiv.
 
-I built this for myself — I am a PhD student in astronomy at Aarhus University and I wanted a smarter way to stay on top of new papers. Other people found it useful, so I made it public. It works for anyone on arXiv.
+Created by [Silke S. Dainese](https://silkedainese.github.io) · [dainese@phys.au.dk](mailto:dainese@phys.au.dk) · [ORCID](https://orcid.org/0009-0001-7885-2439)
 
 <details>
 <summary><sub>🎓 Students — there's an easier setup for you</sub></summary>

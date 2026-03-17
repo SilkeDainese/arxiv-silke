@@ -17,6 +17,7 @@ import re
 import smtplib
 import sys
 import time
+import urllib.error
 import urllib.request
 import urllib.parse
 import webbrowser
@@ -604,7 +605,9 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
         ns = {"atom": "http://www.w3.org/2005/Atom"}
         cutoff = datetime.now(timezone.utc) - timedelta(days=config["days_back"])
 
-        for entry in root.findall("atom:entry", ns):
+        all_entries = root.findall("atom:entry", ns)
+        skipped_malformed = 0
+        for entry in all_entries:
             try:
                 published_str = entry.find("atom:published", ns).text
                 published = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
@@ -616,7 +619,8 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
                 abstract = (entry.find("atom:summary", ns).text or "").strip().replace("\n", " ")
                 authors = [a.find("atom:name", ns).text for a in entry.findall("atom:author", ns) if a.find("atom:name", ns) is not None and a.find("atom:name", ns).text]
             except (AttributeError, TypeError, ValueError):
-                continue  # skip malformed entries
+                skipped_malformed += 1
+                continue
 
             # Check research authors (relevance boost)
             known_flag = []
@@ -701,6 +705,11 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
                 "keyword_hits_raw": kw_hits_raw,
                 "feedback_bias": 0,
             })
+
+        if skipped_malformed:
+            print(f"  ⚠️  Skipped {skipped_malformed} malformed entries in {category}")
+        if skipped_malformed == len(all_entries) and all_entries:
+            print(f"  ⚠️  ALL entries from {category} were malformed — arXiv API format may have changed")
 
     # Deduplicate (same paper may appear in multiple categories)
     seen = set()
@@ -1681,8 +1690,20 @@ def _send_via_relay(recipients: list[str], subject: str,
                 return True
             print(f"❌ Relay returned error: {result.get('error', 'unknown')}")
             return False
-    except Exception as e:
-        print(f"❌ Relay send failed: {e}")
+    except urllib.error.HTTPError as exc:
+        if exc.code == 401:
+            print("❌ Relay token is invalid or expired.")
+            print("   Re-run the setup wizard or ask the maintainer for a new token.")
+        elif exc.code == 429:
+            print("❌ Relay rate limit reached. Your digest will retry on the next scheduled run.")
+        else:
+            print(f"❌ Relay returned HTTP {exc.code}.")
+        return False
+    except urllib.error.URLError as exc:
+        print(f"❌ Could not reach relay: {exc.reason}")
+        return False
+    except (json.JSONDecodeError, ValueError) as exc:
+        print(f"❌ Relay returned unexpected response: {exc}")
         return False
 
 

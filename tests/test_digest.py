@@ -1041,6 +1041,78 @@ class TestEmailSending:
 
         assert ok is True
 
+    def test_send_via_relay_reports_auth_error(self, capsys):
+        import urllib.error
+
+        with patch.dict(os.environ, {"DIGEST_RELAY_TOKEN": "bad-token"}, clear=True):
+            with patch(
+                "digest.urllib.request.urlopen",
+                side_effect=urllib.error.HTTPError(
+                    url="https://relay.example.com",
+                    code=401,
+                    msg="Unauthorized",
+                    hdrs={},
+                    fp=None,
+                ),
+            ):
+                ok = d._send_via_relay(["a@example.com"], "Subj", "<p>hi</p>", "hi")
+
+        assert ok is False
+        output = capsys.readouterr().out
+        assert "invalid or expired" in output
+
+    def test_send_via_relay_reports_rate_limit(self, capsys):
+        import urllib.error
+
+        with patch.dict(os.environ, {"DIGEST_RELAY_TOKEN": "token"}, clear=True):
+            with patch(
+                "digest.urllib.request.urlopen",
+                side_effect=urllib.error.HTTPError(
+                    url="https://relay.example.com",
+                    code=429,
+                    msg="Too Many Requests",
+                    hdrs={},
+                    fp=None,
+                ),
+            ):
+                ok = d._send_via_relay(["a@example.com"], "Subj", "<p>hi</p>", "hi")
+
+        assert ok is False
+        assert "rate limit" in capsys.readouterr().out.lower()
+
+    def test_send_via_relay_reports_network_error(self, capsys):
+        import urllib.error
+
+        with patch.dict(os.environ, {"DIGEST_RELAY_TOKEN": "token"}, clear=True):
+            with patch(
+                "digest.urllib.request.urlopen",
+                side_effect=urllib.error.URLError("Connection refused"),
+            ):
+                ok = d._send_via_relay(["a@example.com"], "Subj", "<p>hi</p>", "hi")
+
+        assert ok is False
+        assert "Could not reach relay" in capsys.readouterr().out
+
+    def test_send_via_relay_reports_unexpected_response(self, capsys):
+        import urllib.error
+
+        class _BadResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return b"not json"
+
+        with patch.dict(os.environ, {"DIGEST_RELAY_TOKEN": "token"}, clear=True):
+            with patch("digest.urllib.request.urlopen", return_value=_BadResponse()):
+                ok = d._send_via_relay(["a@example.com"], "Subj", "<p>hi</p>", "hi")
+
+        assert ok is False
+        assert "unexpected response" in capsys.readouterr().out.lower()
+
 
 class TestMainExitCodes:
     def test_main_exits_nonzero_when_email_delivery_fails(self, tmp_path, capsys):

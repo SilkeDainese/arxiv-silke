@@ -47,6 +47,10 @@ From another field? [Write me](mailto:dainese@phys.au.dk) and I'll set up packag
 - The file must be named exactly `config.yaml` (not `config (1).yaml`) and sit in the repo root
 - First run: use `Run workflow` manually to test — check the log if no email arrives
 - Outlook users: set `smtp_server: "smtp.office365.com"` in `config.yaml`
+- Adding secrets manually: `Settings` → `Secrets and variables` → `Actions` → `New repository secret`
+  - `RECIPIENT_EMAIL` — your email address
+  - `DIGEST_RELAY_TOKEN` — the token from the config page
+  - No invite code? Use `SMTP_USER` + `SMTP_PASSWORD` instead ([Gmail App Password →](https://myaccount.google.com/apppasswords))
 
 </details>
 

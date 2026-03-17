@@ -35,8 +35,8 @@ jobs:
           git fetch upstream "$DEFAULT_BRANCH"
           git checkout "$DEFAULT_BRANCH"
 
-          if git diff --quiet HEAD "upstream/$DEFAULT_BRANCH"; then
-            echo "Already up to date with ${UPSTREAM_REPO}."
+          if [ -z "$(git log HEAD..upstream/$DEFAULT_BRANCH --oneline)" ]; then
+            echo "No new upstream commits."
             exit 0
           fi
 

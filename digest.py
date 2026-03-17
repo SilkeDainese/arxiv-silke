@@ -170,9 +170,11 @@ def load_keyword_stats() -> dict[str, Any]:
 
 
 def save_keyword_stats(stats: dict[str, Any]) -> None:
-    """Persist keyword hit statistics to disk as JSON."""
-    with open(STATS_PATH, "w") as f:
+    """Persist keyword hit statistics to disk as JSON (atomic write)."""
+    tmp_path = STATS_PATH.with_suffix(".tmp")
+    with open(tmp_path, "w") as f:
         json.dump(stats, f, indent=2)
+    os.replace(tmp_path, STATS_PATH)
 
 
 def load_feedback_stats() -> dict[str, Any]:
@@ -188,9 +190,11 @@ def load_feedback_stats() -> dict[str, Any]:
 
 
 def save_feedback_stats(stats: dict[str, Any]) -> None:
-    """Persist feedback-derived keyword preferences to disk."""
-    with open(FEEDBACK_STATS_PATH, "w") as f:
+    """Persist feedback-derived keyword preferences to disk (atomic write)."""
+    tmp_path = FEEDBACK_STATS_PATH.with_suffix(".tmp")
+    with open(tmp_path, "w") as f:
         json.dump(stats, f, indent=2)
+    os.replace(tmp_path, FEEDBACK_STATS_PATH)
 
 
 def _normalise_colleague_people(people: Any) -> list[dict[str, Any]]:
@@ -584,7 +588,7 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
             "sortBy": "submittedDate",
             "sortOrder": "descending",
         }
-        url = "http://export.arxiv.org/api/query?" + urllib.parse.urlencode(params)
+        url = "https://export.arxiv.org/api/query?" + urllib.parse.urlencode(params)
         print(f"  Fetching {category}...")
 
         req = urllib.request.Request(url)
@@ -1720,7 +1724,7 @@ def _send_via_smtp(recipients: list[str], subject: str, html: str,
     msg.attach(MIMEText(html, "html"))
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
+        with smtplib.SMTP(smtp_server, smtp_port, timeout=30) as server:
             server.ehlo()
             server.starttls()
             server.ehlo()
@@ -1799,8 +1803,13 @@ def main() -> None:
     print("\n📡 Fetching papers from arXiv...")
     try:
         papers = fetch_arxiv_papers(config)
+    except urllib.error.URLError as exc:
+        print(f"\n❌ arXiv fetch failed (network error): {exc}")
+        print("   Check your internet connection, or try again — arXiv may be temporarily down.")
+        raise SystemExit(1) from None
     except Exception as exc:
         print(f"\n❌ arXiv fetch failed: {exc}")
+        print("   If this keeps happening, open an issue: https://github.com/SilkeDainese/arxiv-digest/issues")
         raise SystemExit(1) from None
 
     print("\n👍 Ingesting quick-feedback votes...")
@@ -1839,8 +1848,12 @@ def main() -> None:
 
     # Save HTML artifact (always)
     output_path = Path(__file__).parent / "digest_output.html"
-    with open(output_path, "w") as f:
-        f.write(html)
+    try:
+        with open(output_path, "w") as f:
+            f.write(html)
+    except OSError as exc:
+        print(f"  ⚠️  Could not save HTML artifact: {exc}")
+        print("   Continuing with email delivery...")
 
     if preview_mode:
         print(f"\n👀 Preview saved to {output_path}")
@@ -1857,6 +1870,7 @@ def main() -> None:
         except Exception as exc:
             print(f"\n❌ Email send error: {exc}")
             print(f"   HTML saved to {output_path}")
+            print("   If this keeps happening, open an issue: https://github.com/SilkeDainese/arxiv-digest/issues")
             raise SystemExit(1) from None
 
     print("\n✨ Done!\n")

@@ -14,6 +14,32 @@ If you have suggestions, open an issue or [email me](mailto:dainese@phys.au.dk).
 
 ---
 
+## How arXiv Digest Works
+
+This is **not a chatbot**. It is an automated pipeline that runs on a schedule, scores papers against your research profile, and delivers results to your inbox. You never interact with it — it just works.
+
+```mermaid
+flowchart LR
+    A["⏰ Schedule\n(Mon / Wed / Fri)"] --> B["📄 config.yaml\n(your interests)"]
+    B --> C["📡 arXiv API\n(new papers)"]
+    C --> D["🤖 AI Scoring\n(Claude → Gemini → keywords)"]
+    D --> E["🎨 HTML Render\n(branded digest)"]
+    E --> F["📧 Email\n(delivered to you)"]
+```
+
+**What makes it different from other paper tools:**
+
+- **No login, no app, no chat** — it runs as a GitHub Actions cron job in your fork. Papers arrive in your email on schedule.
+- **Three-tier scoring cascade** — papers are ranked by Claude, then Gemini, then keyword matching as fallback. If one tier is unavailable, the next takes over automatically. You always get a digest.
+- **Research-profile aware** — the AI doesn't just match keywords. It reads your full `research_context` (a free-text description of your work, your [ORCID](https://orcid.org) profile, your active collaborators) and scores papers for *relevance to your actual research*, not just term overlap.
+- **Author and colleague detection** — papers by your known collaborators get flagged. Papers you authored yourself get a celebration section. Colleagues can carry notes (e.g. "PhD advisor", "same instrument team").
+- **Feedback loop** — ↑/↓ arrows on each paper card create GitHub issues that are automatically ingested to nudge future scoring. The system learns what you care about.
+- **Zero lock-in** — everything runs in your GitHub fork. Your config, your secrets, your schedule. Delete the fork and it's gone.
+
+> *A real digest email. Papers are scored for your research profile and delivered on schedule — no interaction required.*
+
+---
+
 ## Quick Start
 
 Three steps plus one email-delivery secret. No terminal.
@@ -74,7 +100,7 @@ Some extras are optional; email delivery is not.
 
 ---
 
-## How It Works
+## AI Scoring Tiers
 
 If the maintainer gave you an invite code, the setup wizard can unlock shared relay / AI access for your session. Otherwise, the digest in your fork uses the best AI available from your own repo secrets and falls back gracefully:
 

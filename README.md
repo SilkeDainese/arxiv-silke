@@ -14,31 +14,30 @@ I built this for myself — I am a PhD student in astronomy at Aarhus University
 
 Three steps. No terminal needed.
 
-> [!TIP]
-> ### Step 1 — Describe your research
-> **[Open the config page →](https://arxiv-digest-setup.streamlit.app)**
->
-> Fill in your name, research interests, keywords, and email address. The page generates a config file — download it.
+### 1. Describe your research
 
-> [!NOTE]
-> ### Step 2 — Get your own copy
-> **[Fork this repo →](https://github.com/SilkeDainese/arxiv-digest/fork)**
->
-> This creates your personal copy on GitHub. Everything runs there — nothing is shared back.
+**[Open the config page →](https://arxiv-digest-setup.streamlit.app)**
 
-> [!IMPORTANT]
-> ### Step 3 — Connect and launch
->
-> **Upload your config:**
-> **Add file → Upload files** → drag in the config file → **Commit changes**
->
-> **Add your secrets:**
-> **Settings → Secrets and variables → Actions**
-> &ensp; → **New repository secret** → name: `RECIPIENT_EMAIL`, value: your email address
-> &ensp; → **New repository secret** → name: `DIGEST_RELAY_TOKEN`, value: the token from the config page
->
-> **Start the first run:**
-> **Actions** tab → enable workflows → **arXiv Digest** → **Run workflow**
+Fill in your name, research interests, keywords, and email address. The page generates a config file — download it.
+
+### 2. Get your own copy
+
+**[Fork this repo →](https://github.com/SilkeDainese/arxiv-digest/fork)**
+
+This creates your personal copy on GitHub. Everything runs there — nothing is shared back.
+
+### 3. Connect and launch
+
+**Upload your config:**
+**Add file → Upload files** → drag in the config file → **Commit changes**
+
+**Add your secrets:**
+**Settings → Secrets and variables → Actions**
+&ensp; → **New repository secret** → name: `RECIPIENT_EMAIL`, value: your email address
+&ensp; → **New repository secret** → name: `DIGEST_RELAY_TOKEN`, value: the token from the config page
+
+**Start the first run:**
+**Actions** tab → enable workflows → **arXiv Digest** → **Run workflow**
 
 **That's it.** Your digest now runs automatically **Mon/Wed/Fri at 9am Danish time**. Papers show up in your inbox — no further action needed.
 

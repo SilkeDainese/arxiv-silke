@@ -2,8 +2,6 @@
 
 **Your personal arXiv paper curator** — fetches new papers, scores them against your research, and delivers a digest to your inbox.
 
-<img src=".github/sample-digest.png" width="480" alt="Sample arXiv Digest email showing a TOP PICK paper card with relevance score, research context summary, and feedback arrows">
-
 Created by [Silke S. Dainese](https://silkedainese.github.io) · [dainese@phys.au.dk](mailto:dainese@phys.au.dk) · [ORCID](https://orcid.org/0009-0001-7885-2439)
 
 I built this for myself — I am a PhD student in astronomy at Aarhus University and I wanted a smarter way to stay on top of new papers. Other people found it useful, so I made it public. It works for anyone on arXiv.
@@ -30,6 +28,8 @@ From another field? [Write me](mailto:dainese@phys.au.dk) and I'll set up packag
 > 5. Run it: `Actions` → enable workflows → `arXiv Digest` → `Run workflow`
 >
 > **That's it.** *Runs automatically Mon/Wed/Fri at 9am Danish time.*
+
+<img src=".github/sample-digest.png" width="480" alt="Sample arXiv Digest email showing a TOP PICK paper card with relevance score, research context summary, and feedback arrows">
 
 <details>
 <summary>Something not working?</summary>

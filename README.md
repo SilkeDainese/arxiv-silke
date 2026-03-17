@@ -1,24 +1,20 @@
-# 🔭 arXiv Digest
+<h1 align="center">🔭 arXiv Digest</h1>
 
-**Your personal arXiv paper curator** — fetches new papers, scores them against your research, and delivers a digest to your inbox.
+  <b>Your personal arXiv paper curator</b> — fetches new papers, scores them against your research, and delivers a digest to your inbox.<br>
+  <sub>
+    Created by <a href="https://silkedainese.github.io">Silke S. Dainese</a> ·
+    <a href="mailto:dainese@phys.au.dk">dainese@phys.au.dk</a> ·
+    <a href="https://orcid.org/0009-0001-7885-2439">ORCID</a>
+  </sub>
+
+
 
 I built this during my PhD in astronomy at Aarhus University to stay on top of new papers without doomscrolling arXiv. Others found it useful, so I made it public — it works for anyone whose papers are on arXiv.
 
-Created by [Silke S. Dainese](https://silkedainese.github.io) · [dainese@phys.au.dk](mailto:dainese@phys.au.dk) · [ORCID](https://orcid.org/0009-0001-7885-2439)
-
-<details>
-<summary><sub>🎓 Students — there's an easier setup for you</sub></summary>
-
-On the config page, choose the `student mini-setup`. You get pre-built interest packages (exoplanets, stars, galaxies, cosmology) with sensible defaults and a lighter weekly schedule. You can customise it later.
-
-From another field? [Write me](mailto:dainese@phys.au.dk) and I'll set up packages for your speciality.
-
-</details>
 
 ---
 
-## Quick Start
-
+## Quick Start 
 1. **[Open the config page →](https://arxiv-digest-setup.streamlit.app)** — it guides you through everything. Download `config.yaml` when done.
 2. **[Fork this repo →](https://github.com/SilkeDainese/arxiv-digest/fork)**, then upload `config.yaml` to the repo root:
    `Add file` → `Upload files` → select `config.yaml` → `Commit changes`
@@ -29,6 +25,14 @@ From another field? [Write me](mailto:dainese@phys.au.dk) and I'll set up packag
 
 > **That's it.** *Runs automatically Mon/Wed/Fri at 9am Danish time.*
 
+<details>
+<summary><sub>🎓 Students — there's an easier setup for you</sub></summary>
+
+On the config page, choose the `student mini-setup`. You get pre-built interest packages (exoplanets, stars, galaxies, cosmology) with sensible defaults and a lighter weekly schedule. You can customise it later.
+
+From another field? [Write me](mailto:dainese@phys.au.dk) and I'll set up packages for your speciality.
+
+</details>
 <img src=".github/sample-digest.png" width="480" alt="Sample arXiv Digest email showing a TOP PICK paper card with relevance score, research context summary, and feedback arrows">
 
 <details>

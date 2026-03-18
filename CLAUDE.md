@@ -17,7 +17,7 @@ Global rules live in `~/.claude/CLAUDE.md`.
 `config.yaml` is owned by the end user (the forker). `config.example.yaml` is the template and documentation. Do not add fields to `config.example.yaml` without also handling them in `load_config()` with a sensible default. New fields must be backward-compatible — old configs without the field must not crash.
 
 ### Setup wizard is separate
-`setup/` is a standalone Streamlit app. It has its own `requirements.txt`. Changes to `setup/` must not require changes to the core `digest.py` runtime, and vice versa.
+`setup/` is a standalone Flask app (entrypoint: `setup/server.py`). It has its own `requirements.txt`. Changes to `setup/` must not require changes to the core `digest.py` runtime, and vice versa.
 
 ---
 

@@ -104,14 +104,21 @@ def test_collect_secret_values_can_skip_recipient_secret_when_config_has_it(monk
 
 
 def test_build_au_student_terminal_config(monkeypatch):
+    # Package order is now 8 items: stars, exoplanets, galaxies, cosmology,
+    # high_energy, instrumentation, solar_helio, methods_ml.
+    # Select exoplanets + galaxies → n, y, y, n, n, n, n, n.
     answers = iter(
         [
             "Student Example",
             "student@example.com",
-            "y",
-            "n",
-            "y",
-            "n",
+            "n",  # stars
+            "y",  # exoplanets
+            "y",  # galaxies
+            "n",  # cosmology
+            "n",  # high_energy
+            "n",  # instrumentation
+            "n",  # solar_helio
+            "n",  # methods_ml
             "2",
         ]
     )

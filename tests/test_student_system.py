@@ -114,7 +114,7 @@ def test_annotate_student_packages_and_rank_au_first():
     selected = select_student_papers(papers, ["exoplanets", "stars"], 2)
 
     assert papers[0]["student_package_ids"] == ["exoplanets"]
-    assert set(papers[1]["student_package_ids"]) == {"stars"}
+    assert "stars" in papers[1]["student_package_ids"]  # astro-ph.SR also maps to solar_helio now
     assert selected[0]["id"] == "au-mid"
     assert selected[1]["id"] == "plain-high"
 

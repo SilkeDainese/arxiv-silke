@@ -16,7 +16,7 @@ import pytest
 import yaml
 
 import digest as d
-from digest import _default_analysis, _fallback_analyse, load_config, load_keyword_stats, load_feedback_stats
+from digest import _default_analysis, _fallback_analyse, load_config, load_keyword_stats, load_feedback_stats, main
 
 
 # ─────────────────────────────────────────────────────────────
@@ -203,3 +203,49 @@ class TestStatsCorruptionRecovery:
             "keyword_feedback": {},
             "updated_at": None,
         }
+
+
+# ─────────────────────────────────────────────────────────────
+#  main() — 0-paper early exit (all arXiv fetches failed)
+# ─────────────────────────────────────────────────────────────
+
+
+class TestZeroPaperDigest:
+    """When every arXiv category fetch fails, main() must exit without sending email."""
+
+    def _minimal_config(self) -> dict:
+        return {
+            "keywords": {"exoplanet": 8},
+            "research_authors": [],
+            "colleagues": {"people": [], "institutions": []},
+            "keyword_aliases": {},
+            "self_match": [],
+            "digest_name": "arXiv Digest",
+            "digest_mode": "highlights",
+            "max_papers": 6,
+            "min_score": 5,
+            "days_back": 7,
+            "arxiv_categories": ["astro-ph.SR"],
+            "recipient_email": "test@example.com",
+            "recipient_view_mode": "researcher",
+            "smtp_user": "",
+            "smtp_password": "",
+            "smtp_host": "smtp.example.com",
+            "smtp_port": 587,
+            "github_repository": "",
+            "github_token": "",
+            "relay_url": "",
+            "setup_wizard_url": "",
+            "feedback_label": "digest-feedback",
+        }
+
+    def test_zero_papers_exits_without_sending_email(self, tmp_path):
+        """main() must raise SystemExit and never call send_email when 0 papers fetched."""
+        with (
+            patch.object(d, "load_config", return_value=self._minimal_config()),
+            patch.object(d, "fetch_arxiv_papers", return_value=[]),
+            patch.object(d, "send_email") as mock_send,
+        ):
+            with pytest.raises(SystemExit):
+                main()
+        mock_send.assert_not_called()

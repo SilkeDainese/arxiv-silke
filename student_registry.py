@@ -15,7 +15,10 @@ MIN_MAX_PAPERS = 1
 MAX_MAX_PAPERS = 20
 AVAILABLE_STUDENT_PACKAGES = [
     track_id
-    for track_id in ["exoplanets", "stars", "galaxies", "cosmology"]
+    for track_id in [
+        "stars", "exoplanets", "galaxies", "cosmology",
+        "high_energy", "instrumentation", "solar_helio", "methods_ml",
+    ]
     if track_id in AU_STUDENT_TRACK_LABELS
 ]
 

@@ -28,13 +28,4 @@ jobs:
         run: python -m pytest -q
 
       - name: Compile Python entrypoints
-        run: python -m py_compile digest.py student_digest.py student_registry.py setup/app.py setup/pure_scraper.py setup/student_presets.py scripts/student_subscription.py scripts/student_admin.py scripts/friend_setup.py relay/api/students.py relay/api/feedback.py relay/api/report.py brand.py
-
-      - name: Install setup wizard dependencies
-        run: pip install -r setup/requirements.txt
-
-      - name: Smoke test setup wizard startup
-        run: |
-          timeout 20s streamlit run setup/app.py --server.headless true --server.port 8501 > /tmp/streamlit.log 2>&1 || test $? -eq 124
-          ! grep -q "Traceback" /tmp/streamlit.log
-          grep -q "Local URL" /tmp/streamlit.log
+        run: python -m py_compile digest.py student_digest.py student_registry.py setup/pure_scraper.py setup/student_presets.py scripts/student_subscription.py scripts/student_admin.py scripts/friend_setup.py relay/api/students.py relay/api/feedback.py relay/api/report.py brand.py

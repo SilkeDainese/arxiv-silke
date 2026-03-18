@@ -1121,7 +1121,7 @@ class TestMainExitCodes:
 
         with patch.object(d, "__file__", str(fake_script)):
             with patch.object(d, "load_config", return_value=make_config()):
-                with patch.object(d, "fetch_arxiv_papers", return_value=[]):
+                with patch.object(d, "fetch_arxiv_papers", return_value=[make_paper()]):
                     with patch.object(d, "ingest_feedback_from_github", return_value={}):
                         with patch.object(d, "apply_feedback_bias"):
                             with patch.object(d, "update_keyword_stats"):

@@ -613,7 +613,7 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
             with urllib.request.urlopen(req, timeout=30) as response:
                 xml_data = response.read().decode("utf-8")
         except Exception as e:
-            print(f"  Error: {e}")
+            print(f"  ⚠️  Error fetching {category}: {e}")
             continue
 
         try:
@@ -1825,6 +1825,11 @@ def main() -> None:
     except Exception as exc:
         print(f"\n❌ arXiv fetch failed: {exc}")
         print("   If this keeps happening, open an issue: https://github.com/SilkeDainese/arxiv-digest/issues")
+        raise SystemExit(1) from None
+
+    if not papers:
+        print("\n⚠️  No papers fetched — all arXiv category requests failed or returned nothing.")
+        print("   Skipping email to avoid sending an empty digest. Check the errors above.")
         raise SystemExit(1) from None
 
     print("\n👍 Ingesting quick-feedback votes...")

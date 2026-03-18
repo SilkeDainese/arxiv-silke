@@ -43,6 +43,9 @@ Global rules live in `~/.claude/CLAUDE.md`.
 
 ## Testing
 
+- **Test-first (TDD) is required.** Write a failing test before any implementation code. Watch it fail. Then implement. Tests written after the fact pass immediately and prove nothing.
+- Bug fix? Write the failing test that reproduces the bug first, then fix it.
+- New feature? Write the failing test that specifies the behaviour first, then build it.
 - Test suite: `tests/test_digest.py` (pytest). Run with `pytest tests/`.
 - Tests use `unittest.mock.patch` to isolate file I/O and env vars. Never let tests hit the real filesystem or make real API calls.
 - Use `make_paper()` and `make_config()` fixture helpers for minimal valid dicts.

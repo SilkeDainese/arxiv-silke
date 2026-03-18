@@ -855,42 +855,42 @@
       <p>Pick the topic packages you want in your daily digest. Select at least one.</p>
 
       <div class="package-grid">
-        <div class="package-card selected" onclick="togglePkg(this)">
+        <div class="package-card selected" data-package-id="stars" onclick="togglePkg(this)">
           <span class="pkg-check">&#x2713;</span>
           <div class="pkg-name">Stars &amp; Stellar</div>
           <div class="pkg-desc">Stellar evolution, atmospheres, rotation, binaries, variable stars.</div>
         </div>
-        <div class="package-card" onclick="togglePkg(this)">
+        <div class="package-card" data-package-id="exoplanets" onclick="togglePkg(this)">
           <span class="pkg-check">&#x2713;</span>
           <div class="pkg-name">Exoplanets</div>
           <div class="pkg-desc">Detection, characterisation, atmospheres, habitability, planetary systems.</div>
         </div>
-        <div class="package-card" onclick="togglePkg(this)">
+        <div class="package-card" data-package-id="galaxies" onclick="togglePkg(this)">
           <span class="pkg-check">&#x2713;</span>
           <div class="pkg-name">Galaxies</div>
           <div class="pkg-desc">Galaxy formation, evolution, morphology, AGN, groups &amp; clusters.</div>
         </div>
-        <div class="package-card" onclick="togglePkg(this)">
+        <div class="package-card" data-package-id="cosmology" onclick="togglePkg(this)">
           <span class="pkg-check">&#x2713;</span>
           <div class="pkg-name">Cosmology</div>
           <div class="pkg-desc">CMB, dark energy, large-scale structure, early universe, inflation.</div>
         </div>
-        <div class="package-card" onclick="togglePkg(this)">
+        <div class="package-card" data-package-id="instrumentation" onclick="togglePkg(this)">
           <span class="pkg-check">&#x2713;</span>
           <div class="pkg-name">Instrumentation</div>
           <div class="pkg-desc">Telescopes, detectors, pipelines, data reduction, surveys.</div>
         </div>
-        <div class="package-card" onclick="togglePkg(this)">
+        <div class="package-card" data-package-id="high_energy" onclick="togglePkg(this)">
           <span class="pkg-check">&#x2713;</span>
           <div class="pkg-name">High Energy</div>
           <div class="pkg-desc">X-ray, gamma-ray, compact objects, supernovae, GRBs, neutrinos.</div>
         </div>
-        <div class="package-card" onclick="togglePkg(this)">
+        <div class="package-card" data-package-id="solar_helio" onclick="togglePkg(this)">
           <span class="pkg-check">&#x2713;</span>
           <div class="pkg-name">Solar &amp; Helio</div>
           <div class="pkg-desc">Solar physics, heliospheric science, space weather, asteroseismology.</div>
         </div>
-        <div class="package-card" onclick="togglePkg(this)">
+        <div class="package-card" data-package-id="methods_ml" onclick="togglePkg(this)">
           <span class="pkg-check">&#x2713;</span>
           <div class="pkg-name">Methods &amp; ML</div>
           <div class="pkg-desc">Statistical methods, machine learning, data science for astronomy.</div>
@@ -1127,14 +1127,31 @@ async function simulateOrcidV2(){
   const btn = document.querySelector('#step-1 .btn-secondary');
   if(btn){ btn.textContent = 'Looking up...'; btn.style.opacity = '.6'; }
 
+  const orcidStatus = document.getElementById('orcid-error') || (() => {
+    const el = document.createElement('div');
+    el.id = 'orcid-error';
+    el.style.cssText = 'color:#C0392B;font-size:12px;margin-top:6px;';
+    btn?.parentElement?.appendChild(el);
+    return el;
+  })();
+  orcidStatus.textContent = '';
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
   try {
     const resp = await fetch('/api/orcid/lookup', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ orcid_id: orcidId, ...getAIKeys() }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     const data = await resp.json();
-    if(data.error) { alert(data.error); if(btn){ btn.textContent = 'Look up'; btn.style.opacity = '1'; } return; }
+    if(data.error) {
+      orcidStatus.textContent = data.error;
+      if(btn){ btn.textContent = 'Look up'; btn.style.opacity = '1'; }
+      return;
+    }
 
     state.orcidData = data;
     state.keywords = data.keywords || {};
@@ -1178,7 +1195,8 @@ async function simulateOrcidV2(){
     }
 
   } catch(e) {
-    alert('ORCID lookup failed: ' + e.message);
+    clearTimeout(timeout);
+    orcidStatus.textContent = e.name === 'AbortError' ? 'Lookup timed out — ORCID may be slow, try again.' : 'Lookup failed: ' + e.message;
   }
   if(btn){ btn.textContent = 'Look up'; btn.style.opacity = '1'; }
 }
@@ -1589,9 +1607,7 @@ async function stuSubscribe(){
   const st = document.getElementById('stu-subscribe-status');
   const email = (document.getElementById('stu-email').value.trim().toLowerCase() || 'au000000') + '@uni.au.dk';
   const password = document.getElementById('stu-pass')?.value || '';
-  const pkgs = [...document.querySelectorAll('#flow-student .package-card.selected')].map(c =>
-    c.querySelector('.pkg-name').textContent.toLowerCase().replace(/[^a-z]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
-  );
+  const pkgs = [...document.querySelectorAll('#flow-student .package-card.selected')].map(c => c.dataset.packageId).filter(Boolean);
   const maxPapers = document.querySelector('#flow-student .radio-option.active .radio-title')?.textContent?.includes('15') ? 15 : 6;
 
   btn.textContent = 'Subscribing...'; btn.style.opacity = '.6';
@@ -1790,8 +1806,8 @@ function fillFromConfig(cfg) {
       });
     });
   }
-  // Keywords
-  const kws = cfg.keywords || {};
+  // Keywords — guard against a list (old config format) instead of a dict
+  const kws = (cfg.keywords && !Array.isArray(cfg.keywords) && typeof cfg.keywords === 'object') ? cfg.keywords : {};
   if(Object.keys(kws).length) {
     state.keywords = {};
     const kwChips = document.getElementById('kw-chips');

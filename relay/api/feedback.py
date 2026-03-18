@@ -57,7 +57,9 @@ def _load_feedback_store() -> tuple[dict[str, Any], str | None]:
         raise
 
     content = base64.b64decode(data["content"]).decode("utf-8")
-    store = json.loads(content) if content.strip() else {"votes": [], "aggregated": {}}
+    store = json.loads(content) if content.strip() else {}
+    if not isinstance(store, dict):
+        store = {}
     store.setdefault("votes", [])
     store.setdefault("aggregated", {})
     return store, data.get("sha")

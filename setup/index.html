@@ -1147,15 +1147,15 @@ async function simulateOrcidV2(){
     // Update found card
     const foundCard = document.querySelector('#orcid-result > div > div > div:first-child');
     if(foundCard) {
-      foundCard.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--pine);">Found: ${data.name}</div>`
-        + `<div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">${data.institution || ''} &middot; ${data.paper_count} papers &middot; ${data.coauthor_count} co-authors</div>`;
+      foundCard.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--pine);">Found: ${escapeHtml(data.name)}</div>`
+        + `<div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">${escapeHtml(data.institution || '')} &middot; ${data.paper_count} papers &middot; ${data.coauthor_count} co-authors</div>`;
     }
 
     // Fill name + institution fields
     const nameField = document.querySelector('#orcid-result .mock-input.autofilled');
-    if(nameField) nameField.innerHTML = `${data.name} <span class="autofill-tag">ORCID</span>`;
+    if(nameField) nameField.innerHTML = `${escapeHtml(data.name)} <span class="autofill-tag">ORCID</span>`;
     const instFields = document.querySelectorAll('#orcid-result .mock-input.autofilled');
-    if(instFields[1]) instFields[1].innerHTML = `${data.institution || ''} <span class="autofill-tag">ORCID</span>`;
+    if(instFields[1]) instFields[1].innerHTML = `${escapeHtml(data.institution || '')} <span class="autofill-tag">ORCID</span>`;
 
     // Fill research description
     const descEl = document.getElementById('research-desc');
@@ -1173,7 +1173,7 @@ async function simulateOrcidV2(){
     const chips = document.getElementById('arxiv-name-chips');
     if(chips && data.self_match) {
       chips.innerHTML = data.self_match.map(n =>
-        `<span class="chip chip-pine">${n} <span class="remove" onclick="this.parentElement.remove()">&times;</span></span>`
+        `<span class="chip chip-pine">${escapeHtml(n)} <span class="remove" onclick="this.parentElement.remove()">&times;</span></span>`
       ).join('') + '<span class="chip chip-ghost">+ add</span>';
     }
 
@@ -1325,12 +1325,12 @@ async function aiSuggestPeople(){
   // Show co-authors directly (sorted by paper count)
   const resultsEl = document.getElementById('ai-people-results');
   const chipsHtml = coauthorNames.slice(0, 10).map(name =>
-    `<span class="chip chip-gold" style="cursor:pointer;" onclick="addColleague(this, '${name.replace(/'/g, "\\'")}')">${name} (${coauthors[name]})</span>`
+    `<span class="chip chip-gold" style="cursor:pointer;" onclick="addColleague(this, '${name.replace(/'/g, "\\'")}')">${escapeHtml(name)} (${coauthors[name]})</span>`
   ).join('');
 
   resultsEl.innerHTML = `<div style="font-size:11px;color:#8a6f00;margin-bottom:6px;font-weight:600;">Co-authors from your publications (${coauthorNames.length} found) &mdash; click to add</div>`
     + `<div class="chip-group">${chipsHtml}</div>`
-    + (coauthorNames.length > 10 ? `<div class="section-desc" style="margin-top:8px;cursor:pointer;color:var(--pine);text-decoration:underline;" onclick="showAllCoauthors()">Show all ${coauthorNames.length} &#x2193;</div><div id="extra-coauthors" style="display:none;"><div class="chip-group" style="margin-top:4px;">${coauthorNames.slice(10).map(name => `<span class="chip chip-gold" style="cursor:pointer;" onclick="addColleague(this, '${name.replace(/'/g, "\\'")}')">${name} (${coauthors[name]})</span>`).join('')}</div></div>` : '')
+    + (coauthorNames.length > 10 ? `<div class="section-desc" style="margin-top:8px;cursor:pointer;color:var(--pine);text-decoration:underline;" onclick="showAllCoauthors()">Show all ${coauthorNames.length} &#x2193;</div><div id="extra-coauthors" style="display:none;"><div class="chip-group" style="margin-top:4px;">${coauthorNames.slice(10).map(name => `<span class="chip chip-gold" style="cursor:pointer;" onclick="addColleague(this, '${name.replace(/'/g, "\\'")}')">${escapeHtml(name)} (${coauthors[name]})</span>`).join('')}</div></div>` : '')
     + `<div style="margin-top:6px;"><button class="btn-clear" onclick="document.getElementById('ai-people-results').style.display='none'">Hide suggestions</button></div>`;
 
   resultsEl.style.display = 'block';
@@ -1624,60 +1624,6 @@ function aiSuggestCats(){ autoFillAll(); }
 function aiSuggestKeywords(){ autoFillAll(); }
 function aiSuggestColleagues(){ aiSuggestPeople(); }
 
-/* ── Auto-fill all (single button: cats + keywords) ── */
-function autoFillAll(){
-  const btn=document.getElementById('autofill-btn'),st=document.getElementById('autofill-status');
-  btn.textContent='Working...';btn.style.opacity='.6';
-  st.style.display='block';st.textContent='Reading 23 publications...';
-  setTimeout(()=>{
-    st.textContent='Suggesting categories...';
-    // Fill categories
-    const chips=document.getElementById('cat-astro-chips');
-    if(chips){['astro-ph.SR','astro-ph.EP','astro-ph.GA','astro-ph.IM','astro-ph.CO'].forEach(name=>{
-      chips.querySelectorAll('.chip').forEach(c=>{if(c.textContent.trim()===name){c.className='chip chip-pine';c.innerHTML=name+' <span class="remove">&times;</span>';}});
-    });}
-    document.getElementById('cat-astro-count').textContent='5/6';
-    document.getElementById('cat-astro').classList.add('open');
-  },600);
-  setTimeout(()=>{
-    st.textContent='Suggesting keywords...';
-    // Fill keyword chips
-    const kwChips=document.getElementById('kw-chips');
-    kwChips.innerHTML=['gyrochronology','rotation period','open clusters','stellar activity','photometry'].map(k=>'<span class="chip chip-pine">'+k+' <span class="remove">&times;</span></span>').join('')+'<span class="chip chip-ghost">+ add keyword</span>';
-    // Fill advanced keyword table too
-    const tbody=document.getElementById('kw-tbody');
-    const empty=document.getElementById('kw-empty-row');if(empty)empty.remove();
-    const kws=[['gyrochronology',9,'max','main interest',true],['rotation period',8,'high','main interest',false],['open clusters',8,'high','main interest',false],['stellar activity',7,'mid','interested',false],['photometry',3,'low','loosely follow',false]];
-    kws.forEach(([name,w])=>{
-      state.keywords[name]=w;
-      tbody.appendChild(makeKwTableRow(name,w));
-    });
-  },1100);
-  setTimeout(()=>{
-    btn.textContent='Auto-filled!';btn.style.opacity='1';
-    st.textContent='5 categories + 5 keywords suggested \u2014 edit freely';
-    document.getElementById('autofill-bar').style.borderColor='#c0d4c6';
-    document.getElementById('autofill-bar').style.background='var(--pine-wash)';
-  },1500);
-}
-
-/* ── AI simulate buttons (legacy, kept for compatibility) ── */
-function aiSuggestCats(){
-  const btn=document.getElementById('ai-suggest-cats-btn');if(!btn)return;
-  const st=document.getElementById('ai-cats-status');
-  btn.textContent='Suggesting...';btn.style.opacity='.6';if(st){st.style.display='inline';st.textContent='Analysing...';}
-  setTimeout(()=>{
-    const chips=document.getElementById('cat-astro-chips');
-    if(chips){['astro-ph.SR','astro-ph.EP','astro-ph.GA','astro-ph.IM','astro-ph.CO'].forEach(name=>{
-      chips.querySelectorAll('.chip').forEach(c=>{if(c.textContent.trim()===name){c.className='chip chip-pine';c.innerHTML=name+' <span class="remove">&times;</span>';}});
-    });}
-    document.getElementById('cat-astro-count').textContent='5/6';
-    document.getElementById('cat-astro').classList.add('open');
-    btn.textContent='AI suggest categories';btn.style.opacity='1';
-    const clearBtn=document.getElementById('ai-clear-cats-btn');if(clearBtn)clearBtn.style.display='';
-    if(st)st.textContent='5 suggested';
-  },1000);
-}
 function clearAiCats(){
   document.querySelectorAll('#cat-container .chip-pine').forEach(c=>{
     const name=c.textContent.replace(/\s*\u00d7\s*/,'').trim();
@@ -1686,21 +1632,6 @@ function clearAiCats(){
   document.getElementById('cat-astro-count').textContent='0/6';
   document.getElementById('ai-clear-cats-btn').style.display='none';
   document.getElementById('ai-cats-status').style.display='none';
-}
-function aiSuggestKeywords(){
-  const btn=document.getElementById('ai-suggest-kw-btn'),st=document.getElementById('ai-kw-status'),tbody=document.getElementById('kw-tbody');
-  btn.textContent='Suggesting...';btn.style.opacity='.6';st.style.display='inline';st.textContent='Reading papers...';
-  setTimeout(()=>{
-    const empty=document.getElementById('kw-empty-row');if(empty)empty.remove();
-    const kws=[['gyrochronology',9,'max','main interest',true],['rotation period',8,'high','main interest',false],['open clusters',8,'high','main interest',false],['stellar activity',7,'mid','interested',false],['photometry',3,'low','loosely follow',false]];
-    kws.forEach(([name,w])=>{
-      state.keywords[name]=w;
-      tbody.appendChild(makeKwTableRow(name,w));
-    });
-    btn.textContent='AI suggest keywords';btn.style.opacity='1';
-    document.getElementById('ai-clear-kw-btn').style.display='';
-    st.textContent='5 suggested';
-  },1000);
 }
 function clearAiKeywords(){
   const tbody=document.getElementById('kw-tbody');
@@ -1982,6 +1913,7 @@ function initCatChips() {
 
 // ── Fill form from uploaded config ──
 function fillFromConfig(cfg) {
+  state.orcidData = null;  // clear stale ORCID data so AI calls use the loaded config
   // Categories
   if(Array.isArray(cfg.categories) && cfg.categories.length) {
     // Clear existing

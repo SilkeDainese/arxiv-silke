@@ -77,9 +77,7 @@ if _raw_codes:
     except json.JSONDecodeError:
         pass
 
-# Rate limiting (in-memory, resets on restart)
-_DAILY_USAGE: dict[str, float] = {}
-_RATE_LIMIT_SECONDS = 86400
+# Rate limiting — not yet implemented; add Flask-Limiter when this moves to a shared deployment
 
 
 # ─────────────────────────────────────────────────────────────

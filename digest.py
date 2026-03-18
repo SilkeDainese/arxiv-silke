@@ -172,7 +172,11 @@ def load_keyword_stats() -> dict[str, Any]:
     """Load keyword hit statistics from disk, or return empty dict if none exist."""
     if STATS_PATH.exists():
         with open(STATS_PATH) as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                print("  ⚠️  keyword_stats.json is corrupted — resetting stats")
+                return {}
     return {}
 
 
@@ -188,7 +192,11 @@ def load_feedback_stats() -> dict[str, Any]:
     """Load feedback-derived keyword preferences from disk."""
     if FEEDBACK_STATS_PATH.exists():
         with open(FEEDBACK_STATS_PATH) as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                print("  ⚠️  feedback_stats.json is corrupted — resetting feedback stats")
+                return {"processed_issue_ids": [], "keyword_feedback": {}, "updated_at": None}
     return {
         "processed_issue_ids": [],
         "keyword_feedback": {},

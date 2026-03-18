@@ -16,7 +16,7 @@ import pytest
 import yaml
 
 import digest as d
-from digest import _default_analysis, _fallback_analyse, load_config
+from digest import _default_analysis, _fallback_analyse, load_config, load_keyword_stats, load_feedback_stats
 
 
 # ─────────────────────────────────────────────────────────────
@@ -176,3 +176,30 @@ class TestFallbackAnalyseMissingKeywordHits:
         papers = [paper]
         _fallback_analyse(papers, cfg)
         assert papers[0]["relevance_score"] >= 1
+
+
+# ─────────────────────────────────────────────────────────────
+#  load_keyword_stats / load_feedback_stats — corrupted file recovery
+# ─────────────────────────────────────────────────────────────
+
+
+class TestStatsCorruptionRecovery:
+    def test_load_keyword_stats_corrupted_returns_empty_dict(self, tmp_path):
+        """Corrupted keyword_stats.json must not crash — returns {}."""
+        stats_file = tmp_path / "keyword_stats.json"
+        stats_file.write_text("{not valid json{{")
+        with patch.object(d, "STATS_PATH", stats_file):
+            result = load_keyword_stats()
+        assert result == {}
+
+    def test_load_feedback_stats_corrupted_returns_default(self, tmp_path):
+        """Corrupted feedback_stats.json must not crash — returns the default structure."""
+        stats_file = tmp_path / "feedback_stats.json"
+        stats_file.write_text("[truncated")
+        with patch.object(d, "FEEDBACK_STATS_PATH", stats_file):
+            result = load_feedback_stats()
+        assert result == {
+            "processed_issue_ids": [],
+            "keyword_feedback": {},
+            "updated_at": None,
+        }

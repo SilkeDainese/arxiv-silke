@@ -82,7 +82,9 @@ def _load_registry() -> tuple[dict[str, Any], str | None]:
         raise
 
     content = base64.b64decode(data["content"]).decode("utf-8")
-    registry = json.loads(content) if content.strip() else {"students": {}}
+    registry = json.loads(content) if content.strip() else {}
+    if not isinstance(registry, dict):
+        registry = {}
     registry.setdefault("students", {})
     return registry, data.get("sha")
 

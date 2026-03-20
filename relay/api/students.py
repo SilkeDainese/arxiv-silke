@@ -310,7 +310,7 @@ def _manage_page(
     status_text = (
         "Enter your password and click Unsubscribe."
         if mode == "unsubscribe"
-        else "Enter your password to load or update your student packages."
+        else "New here? Choose a password, pick your packages, and hit Subscribe. Already subscribed? Enter your password and load your settings."
     )
     return f"""<!doctype html>
 <html lang="en">
@@ -440,7 +440,7 @@ def _manage_page(
         </div>
         <div class="actions">
           <button class="secondary" type="button" onclick="loadCurrent()">Load current settings</button>
-          <button type="button" onclick="saveSubscription()">Save packages</button>
+          <button id="save-btn" type="button" onclick="saveSubscription()">Subscribe</button>
           <button class="secondary" type="button" onclick="resendConfirmation()">Resend confirmation email</button>
           <button class="danger" type="button" onclick="unsubscribe()">Unsubscribe</button>
         </div>
@@ -498,6 +498,7 @@ def _manage_page(
           const data = await callApi("get");
           document.getElementById("max_papers").value = data.subscription.max_papers_per_week;
           setPackages(data.subscription.package_ids);
+          document.getElementById("save-btn").textContent = "Save packages";
           setStatus("Loaded current settings.");
         }} catch (error) {{
           setStatus(error.message, true);

@@ -562,36 +562,29 @@ def _manage_page(
       .email-row {{
         display: flex;
         align-items: center;
-        background: #F8F7F4;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        overflow: hidden;
-      }}
-      .email-row:focus-within {{
-        border-color: var(--pine);
-        box-shadow: 0 0 0 2px rgba(47,79,62,0.12);
+        gap: 8px;
       }}
       .email-affix {{
-        padding: 10px 0 10px 12px;
-        font-size: 14px;
+        font-size: 15px;
         color: var(--warm-grey);
         font-family: "IBM Plex Mono", monospace;
         white-space: nowrap;
         user-select: none;
       }}
-      .email-affix:last-child {{
-        padding: 10px 12px 10px 0;
-      }}
       .email-row input {{
-        border: none;
-        border-radius: 0;
-        width: 72px;
-        padding: 10px 2px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        width: 90px;
+        padding: 10px 12px;
         text-align: center;
         font-family: "IBM Plex Mono", monospace;
-        font-size: 14px;
+        font-size: 15px;
         outline: none;
-        background: transparent;
+        background: #F8F7F4;
+      }}
+      .email-row input:focus {{
+        border-color: var(--pine);
+        box-shadow: 0 0 0 2px rgba(47,79,62,0.12);
       }}
       .packages {{
         display: flex;
@@ -620,17 +613,30 @@ def _manage_page(
         width: 16px;
         height: 16px;
       }}
+      .stepper-row {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }}
+      .stepper-row > label {{
+        font-size: 14px;
+        color: var(--charcoal);
+        font-weight: 400;
+      }}
       .stepper {{
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 4px;
+        gap: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
       }}
       .stepper button {{
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: 1px solid var(--border);
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-right: 1px solid var(--border);
         background: white;
         font-size: 18px;
         cursor: pointer;
@@ -639,20 +645,18 @@ def _manage_page(
         justify-content: center;
         color: var(--charcoal);
       }}
+      .stepper button:last-child {{
+        border-right: none;
+        border-left: 1px solid var(--border);
+      }}
       .stepper button:hover {{
-        border-color: var(--pine);
-        color: var(--pine);
+        background: var(--ash-white);
       }}
       .stepper-value {{
         font-family: "DM Serif Display", Georgia, serif;
-        font-size: 24px;
-        min-width: 32px;
+        font-size: 20px;
+        min-width: 48px;
         text-align: center;
-      }}
-      .stepper-label {{
-        font-size: 13px;
-        color: var(--warm-grey);
-        margin-left: 4px;
       }}
       button.primary {{
         border: 0;
@@ -721,7 +725,7 @@ def _manage_page(
   <body>
     <main>
       <h1>AU student digest</h1>
-      <p class="subtitle">Weekly arXiv picks, scored for your interests.</p>
+      <p class="subtitle">Draws from the daily arXiv archive, scored for your interests.</p>
 
       <!-- AU student ID -->
       <div class="field" style="margin-bottom:24px">
@@ -742,18 +746,15 @@ def _manage_page(
       </div>
 
       <!-- Max papers stepper -->
-      <div class="field">
+      <div class="stepper-row">
         <label>Max papers per week</label>
         <div class="stepper">
           <button type="button" onclick="adjustMax(-1)">&minus;</button>
           <span id="max-display" class="stepper-value">{initial_max_papers}</span>
           <button type="button" onclick="adjustMax(1)">+</button>
-          <span class="stepper-label">papers</span>
         </div>
         <input id="max_papers" type="hidden" value="{initial_max_papers}">
       </div>
-
-      <hr class="divider">
 
       <!-- Subscribe button -->
       <button class="primary" type="button" onclick="saveSubscription()">Subscribe</button>

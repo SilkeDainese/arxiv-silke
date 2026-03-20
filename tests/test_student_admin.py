@@ -45,7 +45,7 @@ def test_write_csv_exports_expected_columns(tmp_path):
 
     content = output.read_text(encoding="utf-8")
     assert "email,active,max_papers_per_week,package_ids,package_labels,created_at,updated_at" in content
-    assert "one@example.com,True,5,exoplanets,Planets + exoplanets" in content
+    assert "one@example.com,True,5,exoplanets,Planets & exoplanets" in content
 
 
 def test_main_list_command_uses_fetch(monkeypatch, capsys):

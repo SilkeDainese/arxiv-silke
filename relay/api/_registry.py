@@ -27,7 +27,7 @@ AU_STUDENT_TRACK_LABELS = {
     "stars": "Stars",
     "galaxies": "Galaxies",
     "cosmology": "Cosmology",
-    "exoplanets": "Planets + exoplanets",
+    "exoplanets": "Planets & exoplanets",
     "high_energy": "High-energy astrophysics",
     "instrumentation": "Instrumentation",
     "solar_helio": "Solar & heliophysics",

@@ -132,7 +132,7 @@ def test_build_au_student_terminal_config(monkeypatch):
     assert config["recipient_email"] == "student@example.com"
     assert config["student_tracks"] == [
         "AU Astronomy",
-        "Planets + exoplanets",
+        "Planets & exoplanets",
         "Galaxies",
     ]
     assert config["max_papers"] == 4

@@ -109,7 +109,7 @@ def test_make_student_digest_config_adds_manage_links():
     assert config["recipient_email"] == "student@example.com"
     assert "email=student%40example.com" in config["subscription_manage_url"]
     assert "mode=unsubscribe" in config["subscription_unsubscribe_url"]
-    assert "Planets + exoplanets" in config["tagline"]
+    assert "Planets & exoplanets" in config["tagline"]
     assert "Galaxies" in config["tagline"]
 
 

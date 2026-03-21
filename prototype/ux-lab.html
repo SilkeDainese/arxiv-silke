@@ -103,28 +103,9 @@
   .chip-ghost:hover { border-color:var(--pine); color:var(--pine); }
   .chip .remove { font-size:10px; opacity:.5; cursor:pointer; }
   .chip .remove:hover { opacity:1; }
-  .autofill-tag { font-family:'DM Mono',monospace; font-size:10px; color:var(--pine-light); background:var(--pine-wash); padding:2px 8px; border-radius:3px; margin-left:6px; }
-
   .section-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--warm-grey); margin:16px 0 4px; }
   .section-desc { font-size:12px; color:var(--warm-grey); margin:0 0 8px; line-height:1.5; }
   .note { font-size:11px; color:var(--warm-grey); font-style:italic; margin-top:4px; }
-
-  /* AI foldout */
-  .ai-foldout { border:1px solid #e8d47a; border-radius:8px; margin:8px 0; overflow:hidden; }
-  .ai-foldout.disabled { border-color:var(--card-border); opacity:.5; }
-  .ai-foldout-header { background:var(--gold-wash); padding:10px 14px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; user-select:none; }
-  .ai-foldout.disabled .ai-foldout-header { background:#f5f5f3; }
-  .ai-foldout-title { font-size:12px; font-weight:600; color:#8a6f00; display:flex; align-items:center; gap:6px; }
-  .ai-foldout.disabled .ai-foldout-title { color:var(--warm-grey); }
-  .ai-foldout-chevron { font-size:14px; color:#a08520; transition:transform .2s; }
-  .ai-foldout.collapsed .ai-foldout-body { display:none; }
-  .ai-foldout:not(.collapsed) .ai-foldout-chevron { transform:rotate(90deg); }
-  .ai-foldout-body { padding:10px 14px; background:var(--gold-wash); border-top:1px solid #e8d47a; }
-  .ai-foldout.disabled .ai-foldout-body { background:#f5f5f3; }
-  .ai-foldout-hint { font-size:11px; color:#a08520; margin-bottom:8px; font-style:italic; }
-  .ai-foldout-actions { display:flex; gap:8px; margin-top:8px; }
-  .ai-clear-btn { background:none; border:1px solid #d4b94a; color:#8a6f00; font-size:11px; padding:3px 10px; border-radius:4px; cursor:pointer; font-family:'DM Mono',monospace; }
-  .ai-clear-btn:hover { background:rgba(0,0,0,0.05); }
 
   /* Category expandable groups */
   .cat-expander { border:1px solid var(--card-border); border-radius:6px; margin:4px 0; overflow:hidden; }
@@ -198,14 +179,6 @@
   .email-card-tags.highlight { animation:highlightPulse 1.5s ease; outline:2px solid var(--pine-light); outline-offset:2px; border-radius:4px; }
   .email-card-score.highlight { animation:highlightPulse 1.5s ease; outline:2px solid var(--pine-light); outline-offset:2px; border-radius:4px; }
 
-  /* Card element toggles */
-  .card-toggles { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
-  .card-toggle-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:14px; font-size:11px; cursor:pointer; border:1px solid var(--card-border); background:white; color:var(--warm-grey); transition:all .15s; user-select:none; }
-  .card-toggle-chip.on { background:var(--pine-wash); border-color:#c0d4c6; color:var(--pine); }
-  .card-toggle-chip:hover { border-color:var(--pine); }
-  .card-toggle-chip .dot { width:6px; height:6px; border-radius:50%; background:var(--card-border); }
-  .card-toggle-chip.on .dot { background:var(--pine); }
-
   /* Orderable card element list */
   .card-order-list { list-style:none; margin:8px 0; padding:0; }
   .card-order-item { display:flex; align-items:center; gap:8px; padding:7px 10px; border:1px solid var(--card-border); border-radius:6px; margin-bottom:4px; background:white; transition:all .15s; }
@@ -219,10 +192,6 @@
   .card-order-item .order-arrow:hover { color:var(--pine); }
 
   /* Student / Mini specific */
-  .email-validation { display:flex; gap:6px; align-items:center; margin-top:4px; }
-  .email-validation .status { font-family:'DM Mono',monospace; font-size:11px; padding:3px 8px; border-radius:4px; display:none; }
-  .email-validation .status.ok { display:inline-block; background:var(--pine-wash); color:var(--pine); }
-  .email-validation .status.err { display:inline-block; background:#FFF0F0; color:#C0392B; }
   .mode-flow { display:none; }
   .mode-flow.active { display:block; }
 
@@ -614,9 +583,9 @@
       <hr class="divider" style="margin-top:16px;">
       <div class="download-area">
         <div style="font-family:'DM Serif Display',Georgia,serif;font-size:18px;margin-bottom:4px;">Your config is ready</div>
-        <div style="font-size:12px;color:var(--warm-grey);margin-bottom:4px;">5 categories &middot; 5 keywords &middot; 10 people</div>
-        <div style="font-size:11px;color:var(--warm-grey);margin-bottom:12px;" id="researcher-summary">Highlights &middot; Default card &middot; Mon/Wed/Fri</div>
-        <button class="download-btn">Download config.yaml</button>
+        <div style="font-size:12px;color:var(--warm-grey);margin-bottom:4px;" id="researcher-download-counts">0 categories &middot; 0 keywords &middot; 0 people</div>
+        <div style="font-size:11px;color:var(--warm-grey);margin-bottom:12px;" id="researcher-summary">Mon, Wed, Fri</div>
+        <button class="download-btn" onclick="downloadConfig()">Download config.yaml</button>
       </div>
     </div>
   </div>
@@ -744,7 +713,7 @@
         <div class="chip-group" id="mini-coll-chips" style="flex:1;">
           <span class="chip chip-ghost" onclick="document.getElementById('mini-person-input').focus()">+ add colleague</span>
         </div>
-        <button class="btn-clear" id="mini-coll-clear" style="margin-left:8px;display:none;" onclick="document.getElementById('mini-coll-chips').innerHTML='<span class=\'chip chip-ghost\' onclick=\'document.getElementById(\"mini-person-input\").focus()\'>+ add colleague</span>';this.style.display='none';">Clear</button>
+        <button class="btn-clear" id="mini-coll-clear" style="margin-left:8px;display:none;" onclick="clearMiniColleagues()">Clear</button>
       </div>
       <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
         <input class="mock-input" id="mini-person-input" style="flex:3;padding:7px 12px;font-size:12px;" placeholder="Author name..." onkeydown="if(event.key==='Enter')addMiniPerson()">
@@ -786,9 +755,9 @@
 
       <div class="download-area" style="margin-top:16px;">
         <div style="font-family:'DM Serif Display',Georgia,serif;font-size:18px;margin-bottom:4px;">Your config is ready</div>
-        <div style="font-size:12px;color:var(--warm-grey);margin-bottom:4px;">2 keywords &middot; 0 colleagues</div>
+        <div style="font-size:12px;color:var(--warm-grey);margin-bottom:4px;" id="mini-download-counts">2 keywords &middot; 0 colleagues</div>
         <div style="font-size:11px;color:var(--warm-grey);margin-bottom:12px;" id="mini-summary">Highlights &middot; Mon/Wed/Fri &middot; Random send time</div>
-        <button class="download-btn">Download config.yaml</button>
+        <button class="download-btn" onclick="downloadMiniConfig()">Download config.yaml</button>
       </div>
     </div>
   </div>
@@ -838,6 +807,11 @@
 <div class="app-footer">Built by <a href="https://silkedainese.github.io" target="_blank">Silke S. Dainese</a> &middot; dainese@phys.au.dk</div>
 
 <script>
+/* ── Utilities ── */
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+let autoFilling=false;
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeUpload();}});
+
 function openAccess(){document.getElementById('access-btn').style.display='none';document.getElementById('access-expanded').classList.add('show');document.getElementById('access-input').focus();}
 function closeAccess(){document.getElementById('access-expanded').classList.remove('show');document.getElementById('access-btn').style.display='';document.getElementById('access-status').style.display='none';}
 function submitAccess(){const c=document.getElementById('access-input').value.trim(),s=document.getElementById('access-status');document.getElementById('access-expanded').classList.remove('show');document.getElementById('access-btn').style.display='none';if(c.length>3){s.className='access-status approved';s.textContent='Unlocked: email relay + AI scoring';s.style.display='inline-block';/* Enable AI toggle automatically */const aiToggle=document.getElementById('ai-toggle');if(aiToggle&&!aiToggle.checked){aiToggle.checked=true;toggleAI();}}else{s.className='access-status denied';s.textContent=c.length===0?'Paste a code first':'Code not recognised \u2014 check with the person who shared it';s.style.display='inline-block';setTimeout(()=>{s.style.display='none';document.getElementById('access-btn').style.display='';},4000);}}
@@ -854,7 +828,6 @@ function setMode(el){
 }
 function toggleAI(){
   const on=document.getElementById('ai-toggle').checked;
-  document.querySelectorAll('.ai-foldout').forEach(f=>f.classList.toggle('disabled',!on));
   document.getElementById('ai-key-row').classList.toggle('show',on);
   // P1: disable auto-fill bar and suggest button when AI is off
   const ab=document.getElementById('autofill-bar');
@@ -869,12 +842,37 @@ function done(id){
   const sum=document.getElementById('sum-'+id);
   if(!sum)return;
   const summaries={
-    'step-1':'Silke S. Dainese \u00b7 AU','step-2':'5 categories \u00b7 5 keywords',
-    'step-3':'10 people','step-4':'Highlights \u00b7 Mon/Wed/Fri',
-    'mini-1':'2 keywords','mini-2':'0 colleagues','mini-3':'Highlights \u00b7 Mon/Wed/Fri'
+    'step-1':()=>{
+      const name=document.getElementById('orcid-name')?.value||document.querySelector('#manual-profile input')?.value||'';
+      const inst=document.getElementById('orcid-institution')?.value||'';
+      return name+(inst?' · '+inst:'');
+    },
+    'step-2':()=>{
+      const cats=document.querySelectorAll('#cat-container .chip-pine').length;
+      const kws=document.querySelectorAll('#kw-chips .chip-pine').length;
+      return cats+' categories · '+kws+' keywords';
+    },
+    'step-3':()=>{
+      const n=document.querySelectorAll('#coll-chips .chip-pine').length;
+      return n+' people';
+    },
+    'step-4':()=>{
+      const freq=document.getElementById('freq-label').textContent;
+      return freq;
+    },
+    'mini-1':()=>{
+      const rows=document.querySelectorAll('#flow-mini table tbody tr').length-1;
+      return Math.max(0,rows)+' keywords';
+    },
+    'mini-2':()=>{
+      const n=document.querySelectorAll('#mini-coll-chips .chip-pine').length;
+      return n+' colleagues';
+    },
+    'mini-3':()=>'Highlights · Mon/Wed/Fri'
   };
   const v=summaries[id];
   sum.textContent=typeof v==='function'?v():v||'';
+  updateDownloadSummary();
 }
 function simulateOrcidV2(){
   document.getElementById('orcid-result').style.display='block';
@@ -890,6 +888,8 @@ function autoFillAll(){
   const aiOn=document.getElementById('ai-toggle').checked;
   const btn=document.getElementById('autofill-btn'),st=document.getElementById('autofill-status');
   if(!aiOn){st.style.display='block';st.style.color='#C0392B';st.textContent='Turn on AI-assisted setup above first, or enter an access code.';return;}
+  if(autoFilling)return;
+  autoFilling=true;
   btn.textContent='Working...';btn.style.opacity='.6';
   st.style.display='block';st.style.color='var(--pine)';st.textContent='Reading 23 publications...';
   setTimeout(()=>{
@@ -922,6 +922,7 @@ function autoFillAll(){
     st.textContent='5 categories + 5 keywords suggested \u2014 edit freely';
     document.getElementById('autofill-bar').style.borderColor='#c0d4c6';
     document.getElementById('autofill-bar').style.background='var(--pine-wash)';
+    autoFilling=false;
   },1500);
 }
 
@@ -950,31 +951,50 @@ function addKeyword(){
   const input=document.getElementById('kw-add-input');
   const name=input.value.trim();
   if(!name)return;
+  // Duplicate check
+  const existing=[...document.querySelectorAll('#kw-chips .chip-pine')].map(c=>c.textContent.replace(/\s*×\s*/,'').trim().toLowerCase());
+  if(existing.includes(name.toLowerCase())){input.select();return;}
+  const safe=esc(name);
   const chips=document.getElementById('kw-chips');
   const ghost=chips.querySelector('.chip-ghost');
   const chip=document.createElement('span');
   chip.className='chip chip-pine';
-  chip.innerHTML=name+' <span class="remove" onclick="this.parentElement.remove()">&times;</span>';
+  chip.dataset.kw=name;
+  chip.innerHTML=safe+' <span class="remove" onclick="removeKw(this.parentElement)">&times;</span>';
   chips.insertBefore(chip,ghost);
   // Also add to advanced keyword table
   const tbody=document.getElementById('kw-tbody');
   const empty=document.getElementById('kw-empty-row');if(empty)empty.remove();
   const tr=document.createElement('tr');
-  tr.innerHTML='<td class="kw-name">'+name+'</td><td><div class="kw-weight"><span class="kw-arrow" onclick="changeKwWeight(this,1)">&#x25B2;</span><span class="kw-score">7</span><span class="kw-arrow" onclick="changeKwWeight(this,-1)">&#x25BC;</span></div><span class="kw-label mid">main interest</span></td><td style="text-align:center;"><input type="checkbox" style="accent-color:var(--pine);width:14px;height:14px;"></td><td style="text-align:center;color:var(--warm-grey);cursor:pointer;" onclick="this.closest(\'tr\').remove()">&times;</td>';
+  tr.dataset.kw=name;
+  tr.innerHTML='<td class="kw-name">'+safe+'</td><td><div class="kw-weight"><span class="kw-arrow" onclick="changeKwWeight(this,1)">&#x25B2;</span><span class="kw-score">7</span><span class="kw-arrow" onclick="changeKwWeight(this,-1)">&#x25BC;</span></div><span class="kw-label mid">main interest</span></td><td style="text-align:center;"><input type="checkbox" style="accent-color:var(--pine);width:14px;height:14px;"></td><td style="text-align:center;color:var(--warm-grey);cursor:pointer;" onclick="removeKwRow(this.closest(\'tr\'))">&times;</td>';
   tbody.appendChild(tr);
   input.value='';
   input.focus();
 }
 function changeKwWeight(el,delta){
   const scoreEl=el.parentElement.querySelector('.kw-score');
+  if(!scoreEl)return;
   let v=parseInt(scoreEl.textContent)+delta;
   v=Math.max(0,Math.min(10,v));
   scoreEl.textContent=v;
   const labelEl=el.parentElement.nextElementSibling;
+  if(!labelEl)return;
   if(v<=2){labelEl.className='kw-label low';labelEl.textContent='loosely follow';}
   else if(v<=5){labelEl.className='kw-label mid';labelEl.textContent='interested';}
   else if(v<=8){labelEl.className='kw-label high';labelEl.textContent='main interest';}
   else{labelEl.className='kw-label max';labelEl.textContent='everything';}
+}
+/* ── Keyword chip ↔ table sync ── */
+function removeKw(chipEl){
+  const kw=chipEl.dataset.kw;
+  chipEl.remove();
+  if(kw){const row=document.querySelector('#kw-tbody tr[data-kw="'+CSS.escape(kw)+'"]');if(row)row.remove();}
+}
+function removeKwRow(tr){
+  const kw=tr.dataset.kw;
+  tr.remove();
+  if(kw){const chip=document.querySelector('#kw-chips .chip-pine[data-kw="'+CSS.escape(kw)+'"]');if(chip)chip.remove();}
 }
 
 /* ── Add person ── */
@@ -982,6 +1002,9 @@ function addPerson(){
   const input=document.getElementById('person-add-input');
   const name=input.value.trim();
   if(!name)return;
+  // Duplicate check
+  const existing=[...document.querySelectorAll('#coll-chips .chip-pine')].map(c=>c.dataset.name.toLowerCase());
+  if(existing.includes(name.toLowerCase())){input.select();return;}
   _addPersonChip(name);
   input.value='';
   input.focus();
@@ -992,12 +1015,13 @@ function addPersonFromChip(chipEl,name){
   chipEl.style.pointerEvents='none';
 }
 function _addPersonChip(name){
+  const safe=esc(name);
   const chips=document.getElementById('coll-chips');
   const ghost=chips.querySelector('.chip-ghost');
   const chip=document.createElement('span');
   chip.className='chip chip-pine';
   chip.dataset.name=name;
-  chip.innerHTML=name+' <span class="remove" onclick="this.parentElement.remove();updateReclassifyList()">&times;</span>';
+  chip.innerHTML=safe+' <span class="remove" onclick="this.parentElement.remove();updateReclassifyList()">&times;</span>';
   chips.insertBefore(chip,ghost);
   document.getElementById('coll-clear-btn').style.display='';
   updateReclassifyList();
@@ -1006,14 +1030,14 @@ function updateReclassifyList(){
   const list=document.getElementById('people-reclassify-list');
   const people=[...document.querySelectorAll('#coll-chips .chip-pine')].map(c=>c.dataset.name);
   if(people.length===0){list.innerHTML='<span style="font-size:12px;color:var(--warm-grey);font-style:italic;">Add people above first, then reclassify here.</span>';return;}
-  list.innerHTML=people.map(name=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--card-border);"><span style="font-size:13px;">'+name+'</span><div class="radio-group" style="gap:4px;margin:0;flex-shrink:0;"><div class="radio-option active" onclick="setRadio(this)" style="padding:4px 10px;font-size:11px;"><div class="radio-title" style="font-size:11px;">Colleague</div></div><div class="radio-option" onclick="setRadio(this)" style="padding:4px 10px;font-size:11px;"><div class="radio-title" style="font-size:11px;">Research author</div></div></div></div>').join('');
+  list.innerHTML=people.map(name=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--card-border);"><span style="font-size:13px;">'+esc(name)+'</span><div class="radio-group" style="gap:4px;margin:0;flex-shrink:0;"><div class="radio-option active" onclick="setRadio(this)" style="padding:4px 10px;font-size:11px;"><div class="radio-title" style="font-size:11px;">Colleague</div></div><div class="radio-option" onclick="setRadio(this)" style="padding:4px 10px;font-size:11px;"><div class="radio-title" style="font-size:11px;">Research author</div></div></div></div>').join('');
 }
 
 /* ── Clear ORCID ── */
 function clearOrcid(){
   document.getElementById('orcid-result').style.display='none';
   document.getElementById('manual-profile').style.display='block';
-  document.getElementById('skip-orcid-link').style.display='none';
+  document.getElementById('skip-orcid-link').style.display='';
   var input=document.getElementById('orcid-input');if(input)input.value='';
   // Reset arxiv name chips
   var chips=document.getElementById('arxiv-name-chips');
@@ -1122,6 +1146,87 @@ function setPreset(el,preset){
   if(ep)ep.style.display=scoreVisible?'':'none';
   syncCardPreview();
 }
+
+/* ── Download summary + config generation ── */
+function updateDownloadSummary(){
+  const cats=document.querySelectorAll('#cat-container .chip-pine').length;
+  const kws=document.querySelectorAll('#kw-chips .chip-pine').length;
+  const people=document.querySelectorAll('#coll-chips .chip-pine').length;
+  const freq=document.getElementById('freq-label').textContent;
+  const el=document.getElementById('researcher-download-counts');
+  if(el)el.textContent=cats+' categories · '+kws+' keywords · '+people+' people';
+  const el2=document.getElementById('researcher-summary');
+  if(el2)el2.textContent=freq;
+  // Mini
+  const miniKws=document.querySelectorAll('#flow-mini table tbody tr').length-1;
+  const miniPeople=document.querySelectorAll('#mini-coll-chips .chip-pine').length;
+  const el3=document.getElementById('mini-download-counts');
+  if(el3)el3.textContent=Math.max(0,miniKws)+' keywords · '+miniPeople+' colleagues';
+}
+function downloadConfig(){
+  // Collect categories
+  const cats=[...document.querySelectorAll('#cat-container .chip-pine')].map(c=>c.getAttribute('title')||c.getAttribute('data-code')||c.textContent.replace(/\s*×\s*/,'').trim());
+  // Collect keywords + weights
+  const kws=[];
+  document.querySelectorAll('#kw-tbody tr[data-kw]').forEach(tr=>{
+    const name=tr.dataset.kw;
+    const score=tr.querySelector('.kw-score');
+    kws.push({name:name,weight:score?parseInt(score.textContent):7});
+  });
+  // Also grab chip-only keywords (no table row)
+  document.querySelectorAll('#kw-chips .chip-pine').forEach(c=>{
+    const name=c.dataset.kw||c.textContent.replace(/\s*×\s*/,'').trim();
+    if(!kws.find(k=>k.name===name))kws.push({name:name,weight:7});
+  });
+  // Collect people
+  const colleagues=[...document.querySelectorAll('#coll-chips .chip-pine')].map(c=>c.dataset.name);
+  // Profile
+  const name=document.getElementById('orcid-name')?.value||document.querySelector('#manual-profile input')?.value||'';
+  const inst=document.getElementById('orcid-institution')?.value||'';
+  const desc=document.getElementById('research-desc')?.value||document.getElementById('research-desc-manual')?.value||'';
+  const freq=document.getElementById('freq-label')?.textContent||'Mon, Wed, Fri';
+  // Build YAML
+  let yaml='# arXiv Digest config — generated by setup wizard\n\n';
+  if(name)yaml+='self_match: "'+name+'"\n';
+  if(inst)yaml+='institution: "'+inst+'"\n';
+  if(desc)yaml+='research_context: |\n  '+desc.replace(/\n/g,'\n  ')+'\n';
+  yaml+='\ncategories:\n';
+  cats.forEach(c=>yaml+='  - '+c+'\n');
+  yaml+='\nkeywords:\n';
+  kws.forEach(k=>yaml+='  '+k.name+': '+k.weight+'\n');
+  if(colleagues.length){
+    yaml+='\ncolleagues:\n';
+    colleagues.forEach(c=>yaml+='  - "'+c+'"\n');
+  }
+  yaml+='\ndigest_mode: highlights\n';
+  yaml+='# Schedule: '+freq+'\n';
+  // Trigger download
+  const blob=new Blob([yaml],{type:'text/yaml'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='config.yaml';document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+function downloadMiniConfig(){
+  const kws=[];
+  document.querySelectorAll('#flow-mini table tbody tr:not(:last-child)').forEach(tr=>{
+    const name=tr.querySelector('td')?.textContent?.trim();
+    const score=tr.querySelector('strong')?.textContent?.trim();
+    if(name)kws.push({name:name,weight:score?parseInt(score):7});
+  });
+  const colleagues=[...document.querySelectorAll('#mini-coll-chips .chip-pine')].map(c=>c.textContent.replace(/\s*×\s*/,'').trim());
+  let yaml='# arXiv Digest config — generated by mini setup\n\n';
+  yaml+='keywords:\n';
+  kws.forEach(k=>yaml+='  '+k.name+': '+k.weight+'\n');
+  if(colleagues.length){yaml+='\ncolleagues:\n';colleagues.forEach(c=>yaml+='  - "'+c+'"\n');}
+  yaml+='\ndigest_mode: highlights\n';
+  const blob=new Blob([yaml],{type:'text/yaml'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='config.yaml';document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
 /* ── Upload overlay ── */
 function openUpload(){document.getElementById('upload-overlay').classList.add('show');}
 function closeUpload(){document.getElementById('upload-overlay').classList.remove('show');document.getElementById('upload-status').style.display='none';}
@@ -1140,11 +1245,12 @@ function addMiniKeyword(){
   const input=document.getElementById('mini-kw-input');
   const name=input.value.trim();
   if(!name)return;
+  const safe=esc(name);
   const tbody=input.closest('tbody');
   const addRow=input.closest('tr');
   const tr=document.createElement('tr');
   tr.style.borderBottom='1px solid var(--card-border)';
-  tr.innerHTML='<td style="padding:6px 8px;">'+name+'</td><td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,1)">&#x25B2;</span> <span class="mini-kw-score"><strong>7</strong></span> <span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,-1)">&#x25BC;</span></td><td style="text-align:center;"><input type="checkbox"></td><td><span class="remove" style="cursor:pointer;" onclick="this.closest(\'tr\').remove()">&times;</span></td>';
+  tr.innerHTML='<td style="padding:6px 8px;">'+safe+'</td><td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,1)">&#x25B2;</span> <span class="mini-kw-score"><strong>7</strong></span> <span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,-1)">&#x25BC;</span></td><td style="text-align:center;"><input type="checkbox"></td><td><span class="remove" style="cursor:pointer;" onclick="this.closest(\'tr\').remove()">&times;</span></td>';
   tbody.insertBefore(tr,addRow);
   input.value='';
   input.focus();
@@ -1161,15 +1267,21 @@ function addMiniPerson(){
   const input=document.getElementById('mini-person-input');
   const name=input.value.trim();
   if(!name)return;
+  const safe=esc(name);
   const chips=document.getElementById('mini-coll-chips');
   const ghost=chips.querySelector('.chip-ghost');
   const chip=document.createElement('span');
   chip.className='chip chip-pine';
-  chip.innerHTML=name+' <span class="remove" onclick="this.parentElement.remove()">&times;</span>';
+  chip.innerHTML=safe+' <span class="remove" onclick="this.parentElement.remove()">&times;</span>';
   chips.insertBefore(chip,ghost);
   document.getElementById('mini-coll-clear').style.display='';
   input.value='';
   input.focus();
+}
+/* ── Mini colleague clear (extracted from inline onclick) ── */
+function clearMiniColleagues(){
+  document.getElementById('mini-coll-chips').innerHTML='<span class="chip chip-ghost" onclick="document.getElementById(\'mini-person-input\').focus()">+ add colleague</span>';
+  document.getElementById('mini-coll-clear').style.display='none';
 }
 
 </script>

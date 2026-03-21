@@ -20,15 +20,17 @@ I built this during my PhD in astronomy at Aarhus University to stay on top of n
 ## Quick Start
 1. **[Open the config page →](https://arxiv-digest-production-93ba.up.railway.app)** — it walks you through everything, including secrets. Download `config.yaml` when done.
 2. **[Fork this repo →](https://github.com/SilkeDainese/arxiv-digest/fork)** and upload `config.yaml` to the repo root.
-3. Add the <a href="https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions" title="Secrets are GitHub's way of storing passwords and access codes safely — only your repo can see them, they stay hidden from everyone else">secrets</a> the config page told you to add.
+3. Add [secrets](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions) — passwords and tokens stored safely in GitHub so your digest can send emails and talk to AI. The config page tells you exactly which ones. You add them once in your fork's `Settings → Secrets → Actions`.
 4. Run it: <a href="https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions" title="Actions is GitHub's built-in automation — it runs your digest on a schedule, like a timer you set once and forget">Actions</a> → enable workflows → `arXiv Digest` → `Run workflow`
 
 > **That's it.** *Runs automatically Mon/Wed/Fri at 9am Danish time.*
 
 <details>
-<summary><sub>🎓 Students — there's an easier setup for you</sub></summary>
+<summary><sub>🎓 AU Students — there's an easier setup for you</sub></summary>
 
-On the config page, choose the `student mini-setup`. You get pre-built interest packages (exoplanets, stars, galaxies, cosmology) with sensible defaults and a lighter weekly schedule. You can customise it later.
+**[Sign up here →](https://arxiv-digest-relay.vercel.app/api/students)** — no forking, no secrets, no API keys. Just your AU email and a password. AI scoring and email delivery are provided for you.
+
+Pick from pre-built interest packages (exoplanets, stars, galaxies, cosmology, and more) and get a weekly digest. You can update your interests or unsubscribe anytime.
 
 From another field? [Write me](mailto:dainese@phys.au.dk) and I'll set up packages for your speciality.
 
@@ -49,7 +51,7 @@ From another field? [Write me](mailto:dainese@phys.au.dk) and I'll set up packag
 - Outlook users: set `smtp_server: "smtp.office365.com"` in `config.yaml`
 - Adding secrets manually: `Settings` → `Secrets and variables` → `Actions` → `New repository secret`
   - `RECIPIENT_EMAIL` — your email address
-  - `DIGEST_RELAY_TOKEN` — the token from the config page
+  - `DIGEST_RELAY_TOKEN` — the token from the config page (lets the digest send emails through our relay server, so you don't need your own SMTP setup)
   - No invite code? Use `SMTP_USER` + `SMTP_PASSWORD` instead ([Gmail App Password →](https://myaccount.google.com/apppasswords))
 
 </details>
@@ -63,7 +65,7 @@ From another field? [Write me](mailto:dainese@phys.au.dk) and I'll set up packag
 <details>
 <summary>I'm a student — is there an easier way?</summary>
 
-Yes! See the [student setup](#-students--theres-an-easier-setup-for-you) at the top of this page.
+Yes! **[Sign up directly here →](https://arxiv-digest-relay.vercel.app/api/students)** — no GitHub, no forking, no API keys. Just your `@uni.au.dk` email and a password. Everything else is handled for you.
 
 </details>
 

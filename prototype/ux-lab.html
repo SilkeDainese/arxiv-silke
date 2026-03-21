@@ -85,10 +85,14 @@
   .field-row { display:flex; gap:10px; margin-bottom:10px; }
   .field { flex:1; min-width:0; }
   .field label { display:block; font-family:'DM Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--warm-grey); margin-bottom:4px; }
-  .mock-input { background:var(--ash-white); border:1px solid var(--card-border); border-radius:6px; padding:9px 12px; font-size:13px; color:var(--warm-grey); font-style:italic; width:100%; }
+  .mock-input, input.mock-input { background:var(--ash-white); border:1px solid var(--card-border); border-radius:6px; padding:9px 12px; font-size:13px; color:var(--ash-black); width:100%; font-family:inherit; outline:none; }
+  .mock-input::placeholder { color:var(--warm-grey); font-style:italic; }
+  .mock-input:focus { border-color:var(--pine); }
   .mock-input.filled { color:var(--ash-black); font-style:normal; background:white; border-color:var(--pine-light); }
   .mock-input.autofilled { background:var(--pine-wash); border-color:var(--pine-light); }
-  .mock-textarea { background:var(--ash-white); border:1px solid var(--card-border); border-radius:6px; padding:9px 12px; font-size:13px; color:var(--warm-grey); font-style:italic; min-height:80px; width:100%; line-height:1.5; }
+  .mock-textarea, textarea.mock-textarea { background:var(--ash-white); border:1px solid var(--card-border); border-radius:6px; padding:9px 12px; font-size:13px; color:var(--ash-black); min-height:80px; width:100%; line-height:1.5; font-family:inherit; outline:none; resize:vertical; }
+  .mock-textarea::placeholder { color:var(--warm-grey); font-style:italic; }
+  .mock-textarea:focus { border-color:var(--pine); }
 
   /* Chips */
   .chip-group { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
@@ -170,7 +174,7 @@
   .radio-desc { font-size:11px; margin-top:3px; line-height:1.4; }
 
   /* Email card preview */
-  .email-card { background:white; border:1px solid var(--card-border); border-radius:8px; margin:10px 0; overflow:hidden; font-size:12px; }
+  .email-card { background:white; border-bottom:1px solid var(--card-border); border-radius:8px; margin:10px 0; overflow:hidden; font-size:12px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
   .email-card-topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--pine-wash); border-bottom:1px solid var(--card-border); }
   .email-card-title { font-family:'DM Serif Display',Georgia,serif; font-size:14px; color:var(--pine); flex:1; }
   .email-card-score { font-family:'DM Mono',monospace; font-size:11px; background:var(--gold-wash); color:#8a6f00; padding:2px 8px; border-radius:4px; margin-left:8px; flex-shrink:0; }
@@ -181,8 +185,9 @@
   .email-card-tags { margin-top:8px; display:flex; flex-wrap:wrap; gap:4px; }
   .ep-tag { display:inline-flex; align-items:center; gap:3px; background:var(--pine-wash); color:var(--pine); font-size:10px; padding:2px 8px; border-radius:3px; }
   .ep-tag .tag-arrows { display:flex; gap:1px; margin-left:2px; }
-  .ep-tag .tag-arrow { font-size:8px; cursor:pointer; opacity:.5; }
+  .ep-tag .tag-arrow { font-size:8px; cursor:pointer; opacity:.4; }
   .ep-tag .tag-arrow:hover { opacity:1; }
+  .ep-tag .tag-arrow.voted { opacity:1; color:var(--pine); }
   .abstract-toggle { color:var(--pine); font-size:11px; cursor:pointer; text-decoration:underline; margin-top:6px; display:inline-block; }
   .abstract-content { display:none; margin-top:6px; font-size:11px; color:var(--ash-black); line-height:1.5; padding:8px 10px; background:var(--ash-white); border-radius:4px; border:1px solid var(--card-border); }
   .abstract-content.show { display:block; }
@@ -218,17 +223,6 @@
   .email-validation .status { font-family:'DM Mono',monospace; font-size:11px; padding:3px 8px; border-radius:4px; display:none; }
   .email-validation .status.ok { display:inline-block; background:var(--pine-wash); color:var(--pine); }
   .email-validation .status.err { display:inline-block; background:#FFF0F0; color:#C0392B; }
-  .package-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0; }
-  .package-card { border:1px solid var(--card-border); border-radius:8px; padding:12px; cursor:pointer; transition:all .15s; user-select:none; }
-  .package-card:hover { border-color:var(--pine); }
-  .package-card.selected { background:var(--pine-wash); border-color:var(--pine); }
-  .package-card .pkg-name { font-weight:600; font-size:13px; margin-bottom:2px; }
-  .package-card .pkg-desc { font-size:11px; color:var(--warm-grey); line-height:1.4; }
-  .package-card .pkg-check { float:right; width:18px; height:18px; border:2px solid var(--card-border); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:12px; color:transparent; }
-  .package-card.selected .pkg-check { border-color:var(--pine); color:var(--pine); background:var(--pine-wash); }
-  .password-row { display:flex; gap:8px; align-items:flex-end; }
-  .password-row .field { flex:1; }
-  .password-strength { font-family:'DM Mono',monospace; font-size:10px; margin-top:4px; }
   .mode-flow { display:none; }
   .mode-flow.active { display:block; }
 
@@ -266,7 +260,7 @@
         <button class="access-submit" onclick="submitAccess()">Submit</button>
         <button class="access-close" onclick="closeAccess()">&times;</button>
       </div>
-      <button class="access-btn" id="access-btn" onclick="openAccess()">Access code</button>
+      <button class="access-btn" id="access-btn" onclick="openAccess()" title="Got a code from a friend or instructor? It unlocks email relay + AI scoring.">Access code</button>
     </div>
   </div>
 </header>
@@ -274,7 +268,9 @@
 <div class="mode-bar">
   <div class="mode-option active" onclick="setMode(this)">Researcher setup</div>
   <div class="mode-option" onclick="setMode(this)">Mini setup</div>
-  <div class="mode-option" onclick="setMode(this)">AU Student</div>
+</div>
+<div style="max-width:660px;margin:8px auto 0;text-align:right;">
+  <a href="https://arxiv-digest-relay.vercel.app/api/students" target="_blank" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--pine);text-decoration:underline;">AU Student? Sign up here &rarr;</a>
 </div>
 
 <!-- ═══════ RESEARCHER FLOW ═══════ -->
@@ -282,21 +278,21 @@
 
 <div class="ai-toggle-bar">
   <div class="ai-toggle-row">
-    <div class="ai-toggle-label">AI-assisted setup<small>Add a Gemini key (free) to auto-fill categories, keywords, and people from your publications.</small></div>
+    <div class="ai-toggle-label">AI-assisted setup<small>Add a Gemini key (free) or use an access code to auto-fill categories, keywords, and people from your publications. Without AI, keyword scoring still works &mdash; you just fill things in manually.</small></div>
     <label class="toggle-switch"><input type="checkbox" id="ai-toggle" onchange="toggleAI()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
   </div>
   <div class="ai-key-row" id="ai-key-row" style="align-items:flex-start;">
     <div class="field" style="flex:1;">
       <label>Gemini API key (Google's AI &mdash; free)</label>
       <input class="ai-key-input" placeholder="AIza..." id="gemini-key">
-      <div class="note"><a href="#" style="color:var(--pine);">Get a free key &rarr;</a> aistudio.google.com</div>
+      <div class="note"><a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--pine);">Get a free key &rarr; aistudio.google.com</a></div>
       <div class="note" style="margin-top:1px;">Free to all with a Google account</div>
     </div>
     <div style="margin-top:20px;color:var(--warm-grey);font-size:12px;">or</div>
     <div class="field" style="flex:1;">
       <label>Anthropic API key (paid)</label>
       <input class="ai-key-input" placeholder="sk-ant-..." id="anthropic-key">
-      <div class="note"><a href="#" style="color:var(--pine);">Get a key &rarr;</a> console.anthropic.com</div>
+      <div class="note"><a href="https://console.anthropic.com/" target="_blank" style="color:var(--pine);">Get a key &rarr; console.anthropic.com</a></div>
     </div>
     <div style="margin-top:20px;"><span class="ai-key-status ok" id="ai-key-status" style="display:none;"></span></div>
   </div>
@@ -310,8 +306,12 @@
     <div class="step-body">
       <p>Enter your ORCID to auto-fill your profile, research description, and more. Or skip and fill manually.</p>
 
+      <div class="explainer">
+        <strong>ORCID</strong> is a free researcher ID that links to your publications. If you have one, paste it here and click "Look up" &mdash; we'll pull your name, institution, and papers to pre-fill everything below. Don't have one? No problem, click "No ORCID" below to fill in manually.
+      </div>
+
       <div class="field-row">
-        <div class="field" style="flex:3"><label>ORCID ID</label><div class="mock-input">0000-0002-xxxx-xxxx</div></div>
+        <div class="field" style="flex:3"><label>ORCID ID</label><input class="mock-input" id="orcid-input" placeholder="0000-0002-xxxx-xxxx"></div>
         <div class="field" style="flex:1;display:flex;align-items:flex-end;"><button class="btn-secondary" style="width:100%;" onclick="simulateOrcidV2()">Look up</button></div>
       </div>
 
@@ -323,32 +323,35 @@
               <div style="font-size:13px;font-weight:600;color:var(--pine);">Found: Silke S. Dainese</div>
               <div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">Aarhus University &middot; 23 papers &middot; 14 co-authors</div>
             </div>
-            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--pine);background:rgba(47,79,62,0.15);padding:3px 8px;border-radius:4px;">auto-filled &darr;</span>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--pine);background:rgba(47,79,62,0.15);padding:3px 8px;border-radius:4px;">auto-filled &darr;</span>
+              <button class="btn-clear" onclick="clearOrcid()">Clear</button>
+            </div>
           </div>
         </div>
 
         <!-- Auto-filled fields (appear after ORCID lookup) -->
         <div style="margin-top:12px;">
           <div class="field-row">
-            <div class="field"><label>Your name</label><div class="mock-input filled autofilled">Silke S. Dainese <span class="autofill-tag">ORCID</span></div></div>
-            <div class="field"><label>Institution</label><div class="mock-input filled autofilled">Aarhus University <span class="autofill-tag">ORCID</span></div></div>
+            <div class="field"><label>Your name</label><input class="mock-input filled autofilled" id="orcid-name" value="Silke S. Dainese"></div>
+            <div class="field"><label>Institution</label><input class="mock-input filled autofilled" id="orcid-institution" value="Aarhus University"></div>
           </div>
 
           <div class="section-label">Research description</div>
-          <div class="section-desc">Auto-generated from your 23 publications. Edit freely &mdash; the AI reads this daily to score papers.</div>
-          <div class="field"><div class="mock-textarea" id="research-desc" style="min-height:80px;color:var(--ash-black);font-style:normal;">I study stellar rotation and gyrochronology in open clusters, using photometric time-series data from Kepler, K2, and TESS. My focus is on calibrating the rotation&ndash;age relation for FGK dwarfs and understanding how magnetic braking shapes spin-down.</div></div>
+          <div class="explainer" style="margin-bottom:8px;">This is what the AI reads every day to decide which papers matter to you. Auto-generated from your 23 publications &mdash; edit freely. The more specific you are about your methods, objects, and current questions, the better the scoring.</div>
+          <div class="field"><textarea class="mock-textarea" id="research-desc" style="min-height:80px;">I study stellar rotation and gyrochronology in open clusters, using photometric time-series data from Kepler, K2, and TESS. My focus is on calibrating the rotation–age relation for FGK dwarfs and understanding how magnetic braking shapes spin-down.</textarea></div>
         </div>
       </div>
 
       <!-- No-ORCID manual fields (shown when skipping) -->
       <div id="manual-profile" style="display:none;margin-top:12px;">
         <div class="field-row">
-          <div class="field"><label>Your name</label><div class="mock-input">Your name...</div></div>
-          <div class="field"><label>Institution</label><div class="mock-input">University / lab...</div></div>
+          <div class="field"><label>Your name</label><input class="mock-input" placeholder="Your name..."></div>
+          <div class="field"><label>Institution</label><input class="mock-input" placeholder="University / lab..."></div>
         </div>
         <div class="section-label">Research description</div>
-        <div class="section-desc">Describe your research like you'd tell a colleague. More specific = better AI scoring.</div>
-        <div class="field"><div class="mock-textarea" id="research-desc-manual" style="min-height:80px;">Write your research focus here...</div></div>
+        <div class="explainer" style="margin-bottom:8px;">This is what the AI reads every day to decide which papers matter to you. Write it like you'd describe your work to a colleague: your methods, objects of study, and current questions. The more specific, the better the scoring. <strong>Works with or without AI</strong> &mdash; without AI, it helps the keyword matcher too.</div>
+        <div class="field"><textarea class="mock-textarea" id="research-desc-manual" placeholder="Write your research focus here..." style="min-height:80px;"></textarea></div>
       </div>
 
       <!-- Advanced profile fields -->
@@ -356,15 +359,15 @@
         <span class="section-desc" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;" onclick="toggleAdvanced(this,'advanced-profile')">Advanced profile settings &#x2193;</span>
         <div id="advanced-profile" style="display:none;margin-top:8px;padding:12px;background:var(--ash-white);border:1px solid var(--card-border);border-radius:6px;">
           <div class="field-row">
-            <div class="field"><label>Digest name</label><div class="mock-input filled">arXiv Digest</div><div class="note">Subject line</div></div>
-            <div class="field"><label>Department</label><div class="mock-input">Department...</div></div>
+            <div class="field"><label>Digest name</label><input class="mock-input" value="arXiv Digest"><div class="note">Subject line</div></div>
+            <div class="field"><label>Department</label><input class="mock-input" placeholder="Department..."></div>
           </div>
           <div class="section-label" style="margin-top:8px;">Your name on arXiv</div>
           <div class="section-desc">When you publish, the digest celebrates it!</div>
           <div class="chip-group" id="arxiv-name-chips">
             <span class="chip chip-ghost">+ add name variant</span>
           </div>
-          <div class="field" style="margin-top:10px;"><label>Tagline (optional)</label><div class="mock-input">A motto for the email footer...</div><div class="note">e.g. "Ad astra per aspera"</div></div>
+          <div class="field" style="margin-top:10px;"><label>Tagline (optional)</label><input class="mock-input" placeholder="A motto for the email footer..."><div class="note">e.g. "Ad astra per aspera"</div></div>
         </div>
       </div>
 
@@ -390,32 +393,39 @@
 
       <!-- arXiv Categories -->
       <div class="section-label">arXiv categories</div>
-      <div class="section-desc">Papers outside these categories are ignored.</div>
+      <div class="explainer">arXiv organises papers into categories. Pick the ones relevant to your field &mdash; your digest will <strong>only</strong> scan papers from these categories. If in doubt, start broad and narrow down later.</div>
 
       <div id="cat-container">
         <div class="cat-expander" id="cat-astro">
           <div class="cat-expander-header" onclick="toggleCat('cat-astro')"><span class="cat-expander-name">Astrophysics</span><div class="cat-expander-meta"><span class="cat-count" id="cat-astro-count">0/6</span><span class="cat-expander-chevron">&#x276F;</span></div></div>
           <div class="cat-expander-body">
-            <div class="chip-group" id="cat-astro-chips"><span class="chip chip-ghost" style="font-style:normal;">astro-ph.SR</span><span class="chip chip-ghost" style="font-style:normal;">astro-ph.EP</span><span class="chip chip-ghost" style="font-style:normal;">astro-ph.GA</span><span class="chip chip-ghost" style="font-style:normal;">astro-ph.IM</span><span class="chip chip-ghost" style="font-style:normal;">astro-ph.CO</span><span class="chip chip-ghost" style="font-style:normal;">astro-ph.HE</span></div>
-            <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear">Select all</button><button class="btn-clear">Clear</button></div>
+            <div class="chip-group" id="cat-astro-chips"><span class="chip chip-ghost" style="font-style:normal;" title="astro-ph.SR" data-code="astro-ph.SR">Stars &amp; Stellar</span><span class="chip chip-ghost" style="font-style:normal;" title="astro-ph.EP" data-code="astro-ph.EP">Exoplanets</span><span class="chip chip-ghost" style="font-style:normal;" title="astro-ph.GA" data-code="astro-ph.GA">Galaxies</span><span class="chip chip-ghost" style="font-style:normal;" title="astro-ph.IM" data-code="astro-ph.IM">Instrumentation</span><span class="chip chip-ghost" style="font-style:normal;" title="astro-ph.CO" data-code="astro-ph.CO">Cosmology</span><span class="chip chip-ghost" style="font-style:normal;" title="astro-ph.HE" data-code="astro-ph.HE">High Energy</span></div>
+            <div class="note" style="margin-top:6px;">Hover for arXiv codes. Your config.yaml will use the codes (e.g. astro-ph.SR).</div>
+            <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear" onclick="selectAllCats('cat-astro-chips')">Select all</button><button class="btn-clear" onclick="clearAllCats('cat-astro-chips')">Clear</button></div>
           </div>
         </div>
-        <div class="cat-expander" id="cat-physics"><div class="cat-expander-header" onclick="toggleCat('cat-physics')"><span class="cat-expander-name">Physics</span><div class="cat-expander-meta"><span class="cat-count">0/12</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group"><span class="chip chip-ghost" style="font-style:normal;">hep-th</span><span class="chip chip-ghost" style="font-style:normal;">hep-ph</span><span class="chip chip-ghost" style="font-style:normal;">hep-ex</span><span class="chip chip-ghost" style="font-style:normal;">gr-qc</span><span class="chip chip-ghost" style="font-style:normal;">nucl-th</span><span class="chip chip-ghost" style="font-style:normal;">quant-ph</span></div></div></div>
-        <div class="cat-expander" id="cat-cs"><div class="cat-expander-header" onclick="toggleCat('cat-cs')"><span class="cat-expander-name">Computer Science</span><div class="cat-expander-meta"><span class="cat-count">0/40</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group"><span class="chip chip-ghost" style="font-style:normal;">cs.AI</span><span class="chip chip-ghost" style="font-style:normal;">cs.LG</span><span class="chip chip-ghost" style="font-style:normal;">cs.CV</span><span class="chip chip-ghost" style="font-style:normal;">cs.CL</span></div></div></div>
-        <div class="cat-expander" id="cat-math"><div class="cat-expander-header" onclick="toggleCat('cat-math')"><span class="cat-expander-name">Mathematics</span><div class="cat-expander-meta"><span class="cat-count">0/32</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group"><span class="chip chip-ghost" style="font-style:normal;">math.ST</span><span class="chip chip-ghost" style="font-style:normal;">math.NA</span></div></div></div>
+        <div class="cat-expander" id="cat-hep"><div class="cat-expander-header" onclick="toggleCat('cat-hep')"><span class="cat-expander-name">High Energy Physics</span><div class="cat-expander-meta"><span class="cat-count" id="cat-hep-count">0/4</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group" id="cat-hep-chips"><span class="chip chip-ghost" style="font-style:normal;" title="hep-th">Theory</span><span class="chip chip-ghost" style="font-style:normal;" title="hep-ph">Phenomenology</span><span class="chip chip-ghost" style="font-style:normal;" title="hep-ex">Experiment</span><span class="chip chip-ghost" style="font-style:normal;" title="hep-lat">Lattice</span></div><div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear" onclick="selectAllCats('cat-hep-chips')">Select all</button><button class="btn-clear" onclick="clearAllCats('cat-hep-chips')">Clear</button></div></div></div>
+        <div class="cat-expander" id="cat-grqc"><div class="cat-expander-header" onclick="toggleCat('cat-grqc')"><span class="cat-expander-name">General Relativity &amp; Quantum Cosmology</span><div class="cat-expander-meta"><span class="cat-count" id="cat-grqc-count">0/1</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group" id="cat-grqc-chips"><span class="chip chip-ghost" style="font-style:normal;" title="gr-qc">GR &amp; Quantum Cosmology</span></div><div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear" onclick="selectAllCats('cat-grqc-chips')">Select all</button><button class="btn-clear" onclick="clearAllCats('cat-grqc-chips')">Clear</button></div></div></div>
+        <div class="cat-expander" id="cat-nuclear"><div class="cat-expander-header" onclick="toggleCat('cat-nuclear')"><span class="cat-expander-name">Nuclear Physics</span><div class="cat-expander-meta"><span class="cat-count" id="cat-nuclear-count">0/2</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group" id="cat-nuclear-chips"><span class="chip chip-ghost" style="font-style:normal;" title="nucl-th">Nuclear Theory</span><span class="chip chip-ghost" style="font-style:normal;" title="nucl-ex">Nuclear Experiment</span></div><div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear" onclick="selectAllCats('cat-nuclear-chips')">Select all</button><button class="btn-clear" onclick="clearAllCats('cat-nuclear-chips')">Clear</button></div></div></div>
+        <div class="cat-expander" id="cat-quantum"><div class="cat-expander-header" onclick="toggleCat('cat-quantum')"><span class="cat-expander-name">Quantum Physics</span><div class="cat-expander-meta"><span class="cat-count" id="cat-quantum-count">0/1</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group" id="cat-quantum-chips"><span class="chip chip-ghost" style="font-style:normal;" title="quant-ph">Quantum Physics</span></div><div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear" onclick="selectAllCats('cat-quantum-chips')">Select all</button><button class="btn-clear" onclick="clearAllCats('cat-quantum-chips')">Clear</button></div></div></div>
+        <div class="cat-expander" id="cat-condmat"><div class="cat-expander-header" onclick="toggleCat('cat-condmat')"><span class="cat-expander-name">Condensed Matter</span><div class="cat-expander-meta"><span class="cat-count" id="cat-condmat-count">0/9</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group" id="cat-condmat-chips"><span class="chip chip-ghost" style="font-style:normal;" title="cond-mat.supr-con">Superconductivity</span><span class="chip chip-ghost" style="font-style:normal;" title="cond-mat.str-el">Strongly Correlated Electrons</span><span class="chip chip-ghost" style="font-style:normal;" title="cond-mat.mes-hall">Mesoscale &amp; Nanoscale</span><span class="chip chip-ghost" style="font-style:normal;" title="cond-mat.mtrl-sci">Materials Science</span><span class="chip chip-ghost" style="font-style:normal;" title="cond-mat.stat-mech">Statistical Mechanics</span><span class="chip chip-ghost" style="font-style:normal;" title="cond-mat.soft">Soft Condensed Matter</span><span class="chip chip-ghost" style="font-style:normal;" title="cond-mat.quant-gas">Quantum Gases</span><span class="chip chip-ghost" style="font-style:normal;" title="cond-mat.dis-nn">Disordered Systems &amp; NNs</span><span class="chip chip-ghost" style="font-style:normal;" title="cond-mat.other">Other</span></div><div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear" onclick="selectAllCats('cat-condmat-chips')">Select all</button><button class="btn-clear" onclick="clearAllCats('cat-condmat-chips')">Clear</button></div></div></div>
+        <div class="cat-expander" id="cat-physics"><div class="cat-expander-header" onclick="toggleCat('cat-physics')"><span class="cat-expander-name">Physics (applied &amp; specialised)</span><div class="cat-expander-meta"><span class="cat-count" id="cat-physics-count">0/21</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group" id="cat-physics-chips"><span class="chip chip-ghost" style="font-style:normal;" title="physics.atom-ph">Atomic Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.optics">Optics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.plasm-ph">Plasma Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.flu-dyn">Fluid Dynamics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.bio-ph">Biological Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.chem-ph">Chemical Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.comp-ph">Computational Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.data-an">Data Analysis &amp; Statistics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.geo-ph">Geophysics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.ins-det">Instrumentation &amp; Detectors</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.med-ph">Medical Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.space-ph">Space Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.acc-ph">Accelerator Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.ao-ph">Atmospheric &amp; Oceanic</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.class-ph">Classical Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.ed-ph">Physics Education</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.gen-ph">General Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.hist-ph">History of Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.pop-ph">Popular Physics</span><span class="chip chip-ghost" style="font-style:normal;" title="physics.soc-ph">Physics &amp; Society</span><span class="chip chip-ghost" style="font-style:normal;" title="math-ph">Mathematical Physics</span></div><div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear" onclick="selectAllCats('cat-physics-chips')">Select all</button><button class="btn-clear" onclick="clearAllCats('cat-physics-chips')">Clear</button></div></div></div>
+        <div class="cat-expander" id="cat-cs"><div class="cat-expander-header" onclick="toggleCat('cat-cs')"><span class="cat-expander-name">Computer Science</span><div class="cat-expander-meta"><span class="cat-count" id="cat-cs-count">0/7</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group" id="cat-cs-chips"><span class="chip chip-ghost" style="font-style:normal;" title="cs.AI">Artificial Intelligence</span><span class="chip chip-ghost" style="font-style:normal;" title="cs.LG">Machine Learning</span><span class="chip chip-ghost" style="font-style:normal;" title="cs.CV">Computer Vision</span><span class="chip chip-ghost" style="font-style:normal;" title="cs.CL">Computational Linguistics / NLP</span><span class="chip chip-ghost" style="font-style:normal;" title="cs.DS">Data Structures &amp; Algorithms</span><span class="chip chip-ghost" style="font-style:normal;" title="cs.NE">Neural &amp; Evolutionary Computing</span><span class="chip chip-ghost" style="font-style:normal;" title="cs.RO">Robotics</span></div><div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear" onclick="selectAllCats('cat-cs-chips')">Select all</button><button class="btn-clear" onclick="clearAllCats('cat-cs-chips')">Clear</button></div></div></div>
+        <div class="cat-expander" id="cat-math"><div class="cat-expander-header" onclick="toggleCat('cat-math')"><span class="cat-expander-name">Mathematics</span><div class="cat-expander-meta"><span class="cat-count" id="cat-math-count">0/7</span><span class="cat-expander-chevron">&#x276F;</span></div></div><div class="cat-expander-body"><div class="chip-group" id="cat-math-chips"><span class="chip chip-ghost" style="font-style:normal;" title="math.ST">Statistics Theory</span><span class="chip chip-ghost" style="font-style:normal;" title="math.PR">Probability</span><span class="chip chip-ghost" style="font-style:normal;" title="math.NA">Numerical Analysis</span><span class="chip chip-ghost" style="font-style:normal;" title="math.AG">Algebraic Geometry</span><span class="chip chip-ghost" style="font-style:normal;" title="math.AP">Analysis of PDEs</span><span class="chip chip-ghost" style="font-style:normal;" title="math.DG">Differential Geometry</span><span class="chip chip-ghost" style="font-style:normal;" title="math.DS">Dynamical Systems</span></div><div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-clear" onclick="selectAllCats('cat-math-chips')">Select all</button><button class="btn-clear" onclick="clearAllCats('cat-math-chips')">Clear</button></div></div></div>
+        <div class="note" style="margin-top:6px;">Hover any category for its arXiv code. Your config.yaml uses these codes.</div>
       </div>
 
       <!-- Keywords as simple chips -->
       <div class="section-label">Keywords</div>
-      <div class="section-desc">Topics your digest looks for. Each gets a default weight of 7 (main interest).</div>
+      <div class="explainer">Keywords are the topics your digest searches for inside papers. Each gets a weight (0&ndash;10) that controls how much it influences scoring. Add terms specific to your research &mdash; e.g. "gyrochronology" rather than just "stars".</div>
 
       <div id="kw-chips-view">
         <div class="chip-group" id="kw-chips">
-          <span class="chip chip-ghost">+ add keyword</span>
+          <span class="chip chip-ghost" onclick="document.getElementById('kw-add-input').focus()">+ add keyword</span>
         </div>
         <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
-          <div class="mock-input" style="flex:3;padding:7px 12px;font-size:12px;">Add a keyword...</div>
-          <button class="btn-secondary" style="flex-shrink:0;padding:7px 14px;">Add</button>
+          <input class="mock-input" id="kw-add-input" style="flex:3;padding:7px 12px;font-size:12px;" placeholder="Add a keyword..." onkeydown="if(event.key==='Enter')addKeyword()">
+          <button class="btn-secondary" style="flex-shrink:0;padding:7px 14px;" onclick="addKeyword()">Add</button>
         </div>
       </div>
 
@@ -446,9 +456,13 @@
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="chip-group" id="coll-chips" style="flex:1;">
-          <span class="chip chip-ghost">+ add person</span>
+          <span class="chip chip-ghost" onclick="document.getElementById('person-add-input').focus()">+ add person</span>
         </div>
         <button class="btn-clear" onclick="clearColleagues()" id="coll-clear-btn" style="margin-left:8px;display:none;">Clear</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
+        <input class="mock-input" id="person-add-input" style="flex:3;padding:7px 12px;font-size:12px;" placeholder="Author name (e.g. Barnes, S)..." onkeydown="if(event.key==='Enter')addPerson()">
+        <button class="btn-secondary" style="flex-shrink:0;padding:7px 14px;" onclick="addPerson()">Add</button>
       </div>
 
       <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
@@ -460,24 +474,24 @@
       <div id="ai-people-results" style="display:none;margin-top:8px;padding:10px 12px;background:var(--gold-wash);border:1px solid #e8d47a;border-radius:8px;">
         <div style="font-size:11px;color:#8a6f00;margin-bottom:6px;font-weight:600;">Co-authors from your publications (14 found) &mdash; click to add</div>
         <div class="chip-group">
-          <span class="chip chip-gold" style="cursor:pointer;">C. Advisor (8 papers)</span>
-          <span class="chip chip-gold" style="cursor:pointer;">B. Labmate (5)</span>
-          <span class="chip chip-gold" style="cursor:pointer;">A. Colleague (5)</span>
-          <span class="chip chip-gold" style="cursor:pointer;">D. Postdoc (4)</span>
-          <span class="chip chip-gold" style="cursor:pointer;">E. Student (4)</span>
-          <span class="chip chip-gold" style="cursor:pointer;">F. Visitor (3)</span>
-          <span class="chip chip-gold" style="cursor:pointer;">Barnes, S (7)</span>
-          <span class="chip chip-gold" style="cursor:pointer;">Meibom, S (5)</span>
-          <span class="chip chip-gold" style="cursor:pointer;">Curtis, J (4)</span>
-          <span class="chip chip-gold" style="cursor:pointer;">Douglas, S (3)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'C. Advisor')">C. Advisor (8 papers)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'B. Labmate')">B. Labmate (5)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'A. Colleague')">A. Colleague (5)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'D. Postdoc')">D. Postdoc (4)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'E. Student')">E. Student (4)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'F. Visitor')">F. Visitor (3)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'Barnes, S')">Barnes, S (7)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'Meibom, S')">Meibom, S (5)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'Curtis, J')">Curtis, J (4)</span>
+          <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'Douglas, S')">Douglas, S (3)</span>
         </div>
         <div class="section-desc" style="margin-top:8px;cursor:pointer;color:var(--pine);text-decoration:underline;" onclick="var o=this.nextElementSibling.style.display==='none';this.nextElementSibling.style.display=o?'block':'none';this.textContent=o?'Show fewer \u2191':'Show all 14 \u2193'">Show all 14 &#x2193;</div>
         <div style="display:none;">
           <div class="chip-group" style="margin-top:4px;">
-            <span class="chip chip-gold" style="cursor:pointer;">Ag&uuml;eros, M (3)</span>
-            <span class="chip chip-gold" style="cursor:pointer;">Van Saders, J (3)</span>
-            <span class="chip chip-gold" style="cursor:pointer;">Bouma, L (2)</span>
-            <span class="chip chip-gold" style="cursor:pointer;">Gruner, D (1)</span>
+            <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'Agüeros, M')">Ag&uuml;eros, M (3)</span>
+            <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'Van Saders, J')">Van Saders, J (3)</span>
+            <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'Bouma, L')">Bouma, L (2)</span>
+            <span class="chip chip-gold" style="cursor:pointer;" onclick="addPersonFromChip(this,'Gruner, D')">Gruner, D (1)</span>
           </div>
         </div>
         <div style="margin-top:6px;"><button class="btn-clear" onclick="document.getElementById('ai-people-results').style.display='none'">Hide suggestions</button></div>
@@ -492,7 +506,8 @@
         <span class="section-desc" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;" onclick="toggleAdvanced(this,'advanced-people')">Advanced: colleague vs. research author &#x2193;</span>
         <div id="advanced-people" style="display:none;margin-top:8px;padding:12px;background:var(--ash-white);border:1px solid var(--card-border);border-radius:6px;">
           <div class="section-desc" style="margin:0 0 8px;">By default, everyone is a <strong>colleague</strong> (always shown). Reclassify as <strong>research author</strong> to give a scoring boost instead &mdash; they may be filtered if too off-topic.</div>
-          <div style="font-size:12px;color:var(--warm-grey);font-style:italic;">Add people above first, then reclassify here.</div>
+          <div class="explainer" style="margin-bottom:8px;"><strong>Colleague</strong> = always gets their own section, even if off-topic. Best for labmates, advisors, close collaborators.<br><strong>Research author</strong> = boosts their papers in scoring, but won't force-show them. Best for researchers you admire but don't need every paper from.</div>
+          <div id="people-reclassify-list" style="font-size:12px;color:var(--warm-grey);font-style:italic;">Add people above first, then reclassify here.</div>
         </div>
       </div>
 
@@ -564,10 +579,10 @@
               <div class="email-card-section" id="ep-finding" style="display:none;"><div class="email-card-label">Key finding</div><div>Slowly rotating Hyades stars spin down 20% faster than Skumanich predictions.</div></div>
               <div class="email-card-section" id="ep-why"><div class="email-card-label">Why chosen</div><div>Matches: gyrochronology (9), rotation period (8), open clusters (8)</div></div>
               <div class="email-card-tags" id="ep-tags">
-                <span class="ep-tag">gyrochronology<span class="tag-arrows"><span class="tag-arrow">&#x25B2;</span><span class="tag-arrow">&#x25BC;</span></span></span>
-                <span class="ep-tag">rotation<span class="tag-arrows"><span class="tag-arrow">&#x25B2;</span><span class="tag-arrow">&#x25BC;</span></span></span>
-                <span class="ep-tag">TESS<span class="tag-arrows"><span class="tag-arrow">&#x25B2;</span><span class="tag-arrow">&#x25BC;</span></span></span>
-                <span class="ep-tag">open clusters<span class="tag-arrows"><span class="tag-arrow">&#x25B2;</span><span class="tag-arrow">&#x25BC;</span></span></span>
+                <span class="ep-tag">gyrochronology<span class="tag-arrows"><span class="tag-arrow" onclick="this.classList.toggle('voted')" title="Boost this keyword">&#x25B2;</span><span class="tag-arrow" onclick="this.classList.toggle('voted')" title="Dampen this keyword">&#x25BC;</span></span></span>
+                <span class="ep-tag">rotation<span class="tag-arrows"><span class="tag-arrow" onclick="this.classList.toggle('voted')" title="Boost">&#x25B2;</span><span class="tag-arrow" onclick="this.classList.toggle('voted')" title="Dampen">&#x25BC;</span></span></span>
+                <span class="ep-tag">TESS<span class="tag-arrows"><span class="tag-arrow" onclick="this.classList.toggle('voted')" title="Boost">&#x25B2;</span><span class="tag-arrow" onclick="this.classList.toggle('voted')" title="Dampen">&#x25BC;</span></span></span>
+                <span class="ep-tag">open clusters<span class="tag-arrows"><span class="tag-arrow" onclick="this.classList.toggle('voted')" title="Boost">&#x25B2;</span><span class="tag-arrow" onclick="this.classList.toggle('voted')" title="Dampen">&#x25BC;</span></span></span>
               </div>
               <div>
                 <span class="abstract-toggle" onclick="this.nextElementSibling.classList.toggle('show');this.textContent=this.nextElementSibling.classList.contains('show')?'Hide abstract \u25B2':'Show abstract \u25BC'">Show abstract &#x25BC;</span>
@@ -587,10 +602,10 @@
             <div class="field"><label>Email provider</label>
               <div class="radio-group" style="margin:4px 0 0;"><div class="radio-option active" onclick="setRadio(this)" style="padding:8px;"><div style="font-weight:600;font-size:12px;">Gmail</div></div><div class="radio-option" onclick="setRadio(this)" style="padding:8px;"><div style="font-weight:600;font-size:12px;">Outlook</div></div></div>
             </div>
-            <div class="field"><label>Send time (UTC)</label><div class="mock-input filled" style="text-align:center;">07:00</div><div class="note">When it lands in your inbox.</div></div>
+            <div class="field"><label>Send time (UTC)</label><input class="mock-input" value="07:00" style="text-align:center;"><div class="note">When it lands in your inbox.</div></div>
           </div>
           <div class="field-row" style="margin-top:8px;">
-            <div class="field"><label>Min score (1&ndash;10)</label><div class="mock-input filled" style="text-align:center;">5</div><div class="note">Papers below this are dropped. Set by Digest size above.</div></div>
+            <div class="field"><label>Min score (1&ndash;10)</label><input class="mock-input" value="5" style="text-align:center;" type="number" min="1" max="10"><div class="note">Papers below this are dropped. Set by Digest size above.</div></div>
           </div>
         </div>
       </div>
@@ -612,7 +627,7 @@
 
   <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
     <span class="step-num" style="width:22px;height:22px;font-size:11px;">1</span>
-    <div><div style="font-size:13px;font-weight:600;">Fork the repo</div><div style="font-size:12px;color:var(--warm-grey);margin-top:2px;"><a href="#" style="color:var(--pine);">SilkeDainese/arxiv-digest</a> &rarr; Fork</div></div>
+    <div><div style="font-size:13px;font-weight:600;">Fork the repo</div><div style="font-size:12px;color:var(--warm-grey);margin-top:2px;"><a href="https://github.com/SilkeDainese/arxiv-digest/fork" target="_blank" style="color:var(--pine);">SilkeDainese/arxiv-digest</a> &rarr; Fork</div></div>
   </div>
 
   <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
@@ -626,6 +641,10 @@
       <div style="font-size:13px;font-weight:600;">Add secrets</div>
       <div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">Settings &rarr; Secrets &rarr; Actions</div>
     </div>
+  </div>
+
+  <div class="explainer" style="margin:4px 0 10px 32px;">
+    <strong>What are secrets?</strong> Secrets are GitHub's way of storing passwords and access codes safely &mdash; only your repo can see them, they stay hidden from everyone else. You add them once, and the digest reads them automatically on every run.
   </div>
 
   <div style="margin:4px 0 12px 32px;border:1px solid var(--card-border);border-radius:8px;overflow:hidden;">
@@ -647,8 +666,8 @@
           <td colspan="3" style="padding:6px 10px;font-size:11px;color:#8a6f00;font-weight:600;">Email delivery &mdash; pick one:</td>
         </tr>
         <tr style="border-bottom:1px solid var(--card-border);">
-          <td style="padding:8px 10px;"><code style="background:var(--pine-wash);color:var(--pine);padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px;">RELAY_TOKEN</code></td>
-          <td style="padding:8px 10px;color:var(--warm-grey);">From access code &mdash; no email setup needed</td>
+          <td style="padding:8px 10px;"><code style="background:var(--pine-wash);color:var(--pine);padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px;">DIGEST_RELAY_TOKEN</code></td>
+          <td style="padding:8px 10px;color:var(--warm-grey);">From access code &mdash; sends email through our relay, no SMTP setup needed</td>
           <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--warm-grey);">Option A</td>
         </tr>
         <tr style="border-bottom:1px solid var(--card-border);">
@@ -656,20 +675,20 @@
             <code style="background:var(--pine-wash);color:var(--pine);padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px;">SMTP_USER</code><br>
             <code style="background:var(--pine-wash);color:var(--pine);padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px;margin-top:2px;display:inline-block;">SMTP_PASSWORD</code>
           </td>
-          <td style="padding:8px 10px;color:var(--warm-grey);">Gmail/Outlook + <a href="#" style="color:var(--pine);">App Password</a></td>
+          <td style="padding:8px 10px;color:var(--warm-grey);">Gmail/Outlook + <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--pine);">App Password</a></td>
           <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--warm-grey);">Option B</td>
         </tr>
         <tr style="border-bottom:1px solid var(--card-border);background:var(--gold-wash);">
-          <td colspan="3" style="padding:6px 10px;font-size:11px;color:#8a6f00;font-weight:600;">AI scoring &mdash; optional:</td>
+          <td colspan="3" style="padding:6px 10px;font-size:11px;color:#8a6f00;font-weight:600;">AI scoring &mdash; optional (works fine without, keyword scoring is the fallback):</td>
         </tr>
         <tr style="border-bottom:1px solid var(--card-border);">
           <td style="padding:8px 10px;"><code style="background:var(--pine-wash);color:var(--pine);padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px;">GEMINI_API_KEY</code></td>
-          <td style="padding:8px 10px;color:var(--warm-grey);"><a href="#" style="color:var(--pine);">Free key &rarr;</a> aistudio.google.com</td>
+          <td style="padding:8px 10px;color:var(--warm-grey);"><a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--pine);">Free key &rarr; aistudio.google.com</a></td>
           <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--warm-grey);">Free</td>
         </tr>
         <tr>
           <td style="padding:8px 10px;"><code style="background:var(--pine-wash);color:var(--pine);padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px;">ANTHROPIC_API_KEY</code></td>
-          <td style="padding:8px 10px;color:var(--warm-grey);"><a href="#" style="color:var(--pine);">console.anthropic.com</a></td>
+          <td style="padding:8px 10px;color:var(--warm-grey);"><a href="https://console.anthropic.com/" target="_blank" style="color:var(--pine);">console.anthropic.com</a></td>
           <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--warm-grey);">Paid</td>
         </tr>
       </tbody>
@@ -704,9 +723,9 @@
           <th style="width:24px;"></th>
         </tr></thead>
         <tbody>
-          <tr style="border-bottom:1px solid var(--card-border);"><td style="padding:6px 8px;">machine learning</td><td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;">&#x25B2;</span> <strong>8</strong> <span class="tag-arrow" style="cursor:pointer;">&#x25BC;</span></td><td style="text-align:center;"><input type="checkbox"></td><td><span class="remove" style="cursor:pointer;">&times;</span></td></tr>
-          <tr style="border-bottom:1px solid var(--card-border);"><td style="padding:6px 8px;">exoplanets</td><td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;">&#x25B2;</span> <strong>6</strong> <span class="tag-arrow" style="cursor:pointer;">&#x25BC;</span></td><td style="text-align:center;"><input type="checkbox"></td><td><span class="remove" style="cursor:pointer;">&times;</span></td></tr>
-          <tr style="border-bottom:1px solid var(--card-border);background:var(--ash-white);"><td colspan="4" style="padding:6px 8px;"><span class="chip-ghost" style="display:inline-block;">+ add keyword</span></td></tr>
+          <tr style="border-bottom:1px solid var(--card-border);"><td style="padding:6px 8px;">machine learning</td><td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,1)">&#x25B2;</span> <span class="mini-kw-score"><strong>8</strong></span> <span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,-1)">&#x25BC;</span></td><td style="text-align:center;"><input type="checkbox"></td><td><span class="remove" style="cursor:pointer;" onclick="this.closest('tr').remove()">&times;</span></td></tr>
+          <tr style="border-bottom:1px solid var(--card-border);"><td style="padding:6px 8px;">exoplanets</td><td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,1)">&#x25B2;</span> <span class="mini-kw-score"><strong>6</strong></span> <span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,-1)">&#x25BC;</span></td><td style="text-align:center;"><input type="checkbox"></td><td><span class="remove" style="cursor:pointer;" onclick="this.closest('tr').remove()">&times;</span></td></tr>
+          <tr style="border-bottom:1px solid var(--card-border);background:var(--ash-white);"><td colspan="4" style="padding:6px 8px;"><div style="display:flex;gap:6px;align-items:center;"><input class="mock-input" id="mini-kw-input" style="flex:1;padding:5px 10px;font-size:12px;" placeholder="Add a keyword..." onkeydown="if(event.key==='Enter')addMiniKeyword()"><button class="btn-secondary" style="padding:5px 12px;font-size:11px;" onclick="addMiniKeyword()">Add</button></div></td></tr>
         </tbody>
       </table>
       <div class="note">0 = slight interest &middot; 5 = moderate &middot; 10 = main interest &middot; Always = show every matching paper</div>
@@ -722,10 +741,14 @@
       <p>People whose papers you always want to see, regardless of topic. Labmates, advisors, collaborators.</p>
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="chip-group" style="flex:1;">
-          <span class="chip chip-ghost">+ add colleague</span>
+        <div class="chip-group" id="mini-coll-chips" style="flex:1;">
+          <span class="chip chip-ghost" onclick="document.getElementById('mini-person-input').focus()">+ add colleague</span>
         </div>
-        <button class="btn-clear" style="margin-left:8px;display:none;">Clear</button>
+        <button class="btn-clear" id="mini-coll-clear" style="margin-left:8px;display:none;" onclick="document.getElementById('mini-coll-chips').innerHTML='<span class=\'chip chip-ghost\' onclick=\'document.getElementById(\"mini-person-input\").focus()\'>+ add colleague</span>';this.style.display='none';">Clear</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
+        <input class="mock-input" id="mini-person-input" style="flex:3;padding:7px 12px;font-size:12px;" placeholder="Author name..." onkeydown="if(event.key==='Enter')addMiniPerson()">
+        <button class="btn-secondary" style="flex-shrink:0;padding:7px 14px;" onclick="addMiniPerson()">Add</button>
       </div>
 
       <div class="explainer" style="margin-top:12px;">
@@ -776,7 +799,7 @@
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--warm-grey);margin:0 0 12px;padding-bottom:4px;border-bottom:1px solid var(--card-border);">After setup</div>
     <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
       <span class="step-num" style="width:22px;height:22px;font-size:11px;">1</span>
-      <div><div style="font-size:13px;font-weight:600;">Fork the repo</div><div style="font-size:12px;color:var(--warm-grey);margin-top:2px;"><a href="#" style="color:var(--pine);">SilkeDainese/arxiv-digest</a> &rarr; Fork</div></div>
+      <div><div style="font-size:13px;font-weight:600;">Fork the repo</div><div style="font-size:12px;color:var(--warm-grey);margin-top:2px;"><a href="https://github.com/SilkeDainese/arxiv-digest/fork" target="_blank" style="color:var(--pine);">SilkeDainese/arxiv-digest</a> &rarr; Fork</div></div>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
       <span class="step-num" style="width:22px;height:22px;font-size:11px;">2</span>
@@ -784,7 +807,7 @@
     </div>
     <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
       <span class="step-num" style="width:22px;height:22px;font-size:11px;">3</span>
-      <div><div style="font-size:13px;font-weight:600;">Add secrets</div><div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">Settings &rarr; Secrets &rarr; Actions. Email creds or relay token.</div></div>
+      <div><div style="font-size:13px;font-weight:600;">Add secrets</div><div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">Settings &rarr; Secrets &rarr; Actions. Secrets are passwords stored safely in GitHub &mdash; only your repo sees them.</div></div>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
       <span class="step-num" style="width:22px;height:22px;font-size:11px;">4</span>
@@ -795,141 +818,7 @@
 </div>
 </div><!-- end flow-mini -->
 
-<!-- ═══════ AU STUDENT FLOW ═══════ -->
-<div class="mode-flow" id="flow-student">
-<div class="main">
-
-  <div class="step" style="border-color:var(--pine);margin-top:12px;background:var(--pine-wash);">
-    <div style="padding:14px 18px;">
-      <div style="font-family:'DM Serif Display',Georgia,serif;font-size:15px;color:var(--pine);margin-bottom:4px;">Aarhus University &mdash; Student Digest</div>
-      <div style="font-size:12px;color:var(--warm-grey);line-height:1.5;">AI scoring and email relay provided courtesy. You just need an AU email and to set a password.</div>
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--pine-light);margin-top:6px;opacity:.7;">relay: arxiv-digest-relay.vercel.app/api/students</div>
-    </div>
-  </div>
-
-  <!-- S1. AU Account -->
-  <div class="step" id="stu-1">
-    <div class="step-header" onclick="toggleStep('stu-1')"><span class="step-num">1</span><span class="step-title">Your AU Account</span><span class="step-summary" id="sum-stu-1"></span><span class="step-chevron">&#x276F;</span></div>
-    <div class="step-body">
-      <p>Log in or create your student subscription. Only <strong>@uni.au.dk</strong> emails are accepted.</p>
-
-      <div class="field" style="margin-bottom:10px;">
-        <label>AU email</label>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <input class="ai-key-input" id="stu-email" placeholder="au612345" style="width:120px;border-radius:6px;" oninput="validateStudentEmail()">
-          <span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--warm-grey);">@uni.au.dk</span>
-        </div>
-        <div class="email-validation">
-          <span class="status" id="stu-email-status"></span>
-        </div>
-        <div class="note">Format: au + 6 digits (e.g. au612345@uni.au.dk)</div>
-      </div>
-
-      <div class="password-row">
-        <div class="field">
-          <label>Password</label>
-          <input class="ai-key-input" type="password" id="stu-pass" placeholder="choose a password" style="border-radius:6px;" oninput="checkStudentPass()">
-          <div class="password-strength" id="stu-pass-strength"></div>
-        </div>
-        <div class="field">
-          <label>Confirm</label>
-          <input class="ai-key-input" type="password" id="stu-pass2" placeholder="repeat" style="border-radius:6px;" oninput="checkStudentPass()">
-        </div>
-      </div>
-      <div class="note" style="margin-bottom:8px;">This is a digest-only password, not your AU login. Pick something simple you'll remember.</div>
-
-      <button class="btn-primary" onclick="stuValidateStep1()" id="stu-continue-1" style="margin-top:10px;">Continue &rarr;</button>
-    </div>
-  </div>
-
-  <!-- S2. Interests -->
-  <div class="step collapsed" id="stu-2">
-    <div class="step-header" onclick="toggleStep('stu-2')"><span class="step-num">2</span><span class="step-title">Your Interests</span><span class="step-summary" id="sum-stu-2"></span><span class="step-chevron">&#x276F;</span></div>
-    <div class="step-body">
-      <p>Pick the topic packages you want in your daily digest. Select at least one.</p>
-
-      <div class="package-grid">
-        <div class="package-card selected" onclick="togglePkg(this)">
-          <span class="pkg-check">&#x2713;</span>
-          <div class="pkg-name">Stars &amp; Stellar</div>
-          <div class="pkg-desc">Stellar evolution, atmospheres, rotation, binaries, variable stars.</div>
-        </div>
-        <div class="package-card" onclick="togglePkg(this)">
-          <span class="pkg-check">&#x2713;</span>
-          <div class="pkg-name">Exoplanets</div>
-          <div class="pkg-desc">Detection, characterisation, atmospheres, habitability, planetary systems.</div>
-        </div>
-        <div class="package-card" onclick="togglePkg(this)">
-          <span class="pkg-check">&#x2713;</span>
-          <div class="pkg-name">Galaxies</div>
-          <div class="pkg-desc">Galaxy formation, evolution, morphology, AGN, groups &amp; clusters.</div>
-        </div>
-        <div class="package-card" onclick="togglePkg(this)">
-          <span class="pkg-check">&#x2713;</span>
-          <div class="pkg-name">Cosmology</div>
-          <div class="pkg-desc">CMB, dark energy, large-scale structure, early universe, inflation.</div>
-        </div>
-        <div class="package-card" onclick="togglePkg(this)">
-          <span class="pkg-check">&#x2713;</span>
-          <div class="pkg-name">Instrumentation</div>
-          <div class="pkg-desc">Telescopes, detectors, pipelines, data reduction, surveys.</div>
-        </div>
-        <div class="package-card" onclick="togglePkg(this)">
-          <span class="pkg-check">&#x2713;</span>
-          <div class="pkg-name">High Energy</div>
-          <div class="pkg-desc">X-ray, gamma-ray, compact objects, supernovae, GRBs, neutrinos.</div>
-        </div>
-        <div class="package-card" onclick="togglePkg(this)">
-          <span class="pkg-check">&#x2713;</span>
-          <div class="pkg-name">Solar &amp; Helio</div>
-          <div class="pkg-desc">Solar physics, heliospheric science, space weather, asteroseismology.</div>
-        </div>
-        <div class="package-card" onclick="togglePkg(this)">
-          <span class="pkg-check">&#x2713;</span>
-          <div class="pkg-name">Methods &amp; ML</div>
-          <div class="pkg-desc">Statistical methods, machine learning, data science for astronomy.</div>
-        </div>
-      </div>
-
-      <button class="btn-primary" onclick="stuValidateStep2()" style="margin-top:14px;">Continue &rarr;</button>
-    </div>
-  </div>
-
-  <!-- S3. Settings & Subscribe -->
-  <div class="step collapsed" id="stu-3">
-    <div class="step-header" onclick="toggleStep('stu-3')"><span class="step-num">3</span><span class="step-title">Settings &amp; Subscribe</span><span class="step-chevron">&#x276F;</span></div>
-    <div class="step-body">
-      <p>Choose how many papers per digest, then subscribe.</p>
-
-      <div class="section-label">Frequency</div>
-      <div style="padding:10px 12px;background:var(--pine-wash);border:1px solid #c0d4c6;border-radius:6px;font-size:13px;color:var(--pine);">
-        <strong>Weekly</strong> &mdash; Monday round-up
-        <div style="font-size:11px;color:var(--warm-grey);margin-top:2px;">Student digests are sent once a week to keep things manageable.</div>
-      </div>
-
-      <div class="section-label" style="margin-top:14px;">How many papers?</div>
-      <div class="radio-group">
-        <div class="radio-option active" onclick="setRadio(this)"><div class="radio-title">Highlights (6)</div><div class="radio-desc">Top picks only. Quick read.</div></div>
-        <div class="radio-option" onclick="setRadio(this)"><div class="radio-title">In-depth (15)</div><div class="radio-desc">Broader coverage across your topics.</div></div>
-      </div>
-
-      <div class="download-area" style="margin-top:16px;">
-        <div style="font-family:'DM Serif Display',Georgia,serif;font-size:18px;margin-bottom:4px;">Ready to subscribe</div>
-        <div style="font-size:12px;color:var(--warm-grey);margin-bottom:4px;" id="stu-summary">au612345@uni.au.dk &middot; 1 package &middot; Weekly &middot; Highlights</div>
-        <div style="font-size:11px;color:var(--warm-grey);margin-bottom:12px;">AI scoring &amp; email relay provided by your instructor. No API key needed.</div>
-        <button class="download-btn" onclick="stuSubscribe()" id="stu-subscribe-btn">Subscribe</button>
-        <div id="stu-subscribe-status" style="margin-top:10px;font-family:'DM Mono',monospace;font-size:12px;display:none;"></div>
-      </div>
-
-      <div class="explainer" style="margin-top:14px;">
-        <strong>What happens next?</strong><br>
-        A confirmation email is sent to your AU address. Digests start the next scheduled day. You can update your interests or unsubscribe anytime by coming back here.
-      </div>
-    </div>
-  </div>
-
-</div>
-</div><!-- end flow-student -->
+<!-- AU Student flow removed — lives at https://arxiv-digest-relay.vercel.app/api/students -->
 
 <!-- Upload config overlay -->
 <div class="upload-overlay" id="upload-overlay" onclick="if(event.target===this)closeUpload()">
@@ -946,18 +835,18 @@
   </div>
 </div>
 
-<div class="app-footer">Built by <a href="#">Silke S. Dainese</a> &middot; dainese@phys.au.dk</div>
+<div class="app-footer">Built by <a href="https://silkedainese.github.io" target="_blank">Silke S. Dainese</a> &middot; dainese@phys.au.dk</div>
 
 <script>
 function openAccess(){document.getElementById('access-btn').style.display='none';document.getElementById('access-expanded').classList.add('show');document.getElementById('access-input').focus();}
 function closeAccess(){document.getElementById('access-expanded').classList.remove('show');document.getElementById('access-btn').style.display='';document.getElementById('access-status').style.display='none';}
-function submitAccess(){const c=document.getElementById('access-input').value.trim(),s=document.getElementById('access-status');document.getElementById('access-expanded').classList.remove('show');document.getElementById('access-btn').style.display='none';if(c.length>3){s.className='access-status approved';s.textContent='Approved \u2014 got relay + Gemini';s.style.display='inline-block';}else{s.className='access-status denied';s.textContent='Not recognised';s.style.display='inline-block';setTimeout(()=>{s.style.display='none';document.getElementById('access-btn').style.display='';},4000);}}
+function submitAccess(){const c=document.getElementById('access-input').value.trim(),s=document.getElementById('access-status');document.getElementById('access-expanded').classList.remove('show');document.getElementById('access-btn').style.display='none';if(c.length>3){s.className='access-status approved';s.textContent='Unlocked: email relay + AI scoring';s.style.display='inline-block';/* Enable AI toggle automatically */const aiToggle=document.getElementById('ai-toggle');if(aiToggle&&!aiToggle.checked){aiToggle.checked=true;toggleAI();}}else{s.className='access-status denied';s.textContent=c.length===0?'Paste a code first':'Code not recognised \u2014 check with the person who shared it';s.style.display='inline-block';setTimeout(()=>{s.style.display='none';document.getElementById('access-btn').style.display='';},4000);}}
 document.getElementById('access-input').addEventListener('keydown',e=>{if(e.key==='Enter')submitAccess();if(e.key==='Escape')closeAccess();});
 
 function setMode(el){
   document.querySelectorAll('.mode-option').forEach(m=>m.classList.remove('active'));
   el.classList.add('active');
-  const modes=['researcher','mini','student'];
+  const modes=['researcher','mini'];
   const idx=[...el.parentElement.children].indexOf(el);
   modes.forEach((m,i)=>{
     document.getElementById('flow-'+m).classList.toggle('active',i===idx);
@@ -982,13 +871,11 @@ function done(id){
   const summaries={
     'step-1':'Silke S. Dainese \u00b7 AU','step-2':'5 categories \u00b7 5 keywords',
     'step-3':'10 people','step-4':'Highlights \u00b7 Mon/Wed/Fri',
-    'mini-1':'2 keywords','mini-2':'0 colleagues','mini-3':'Highlights \u00b7 Mon/Wed/Fri',
-    'stu-1':'au612345@uni.au.dk','stu-2':'1 package \u00b7 Mon/Wed/Fri'
+    'mini-1':'2 keywords','mini-2':'0 colleagues','mini-3':'Highlights \u00b7 Mon/Wed/Fri'
   };
   const v=summaries[id];
   sum.textContent=typeof v==='function'?v():v||'';
 }
-function simulateOrcid(){document.getElementById('orcid-result').style.display='block';}
 function simulateOrcidV2(){
   document.getElementById('orcid-result').style.display='block';
   document.getElementById('manual-profile').style.display='none';
@@ -1000,17 +887,19 @@ function simulateOrcidV2(){
 
 /* ── Auto-fill all (single button: cats + keywords) ── */
 function autoFillAll(){
+  const aiOn=document.getElementById('ai-toggle').checked;
   const btn=document.getElementById('autofill-btn'),st=document.getElementById('autofill-status');
+  if(!aiOn){st.style.display='block';st.style.color='#C0392B';st.textContent='Turn on AI-assisted setup above first, or enter an access code.';return;}
   btn.textContent='Working...';btn.style.opacity='.6';
-  st.style.display='block';st.textContent='Reading 23 publications...';
+  st.style.display='block';st.style.color='var(--pine)';st.textContent='Reading 23 publications...';
   setTimeout(()=>{
     st.textContent='Suggesting categories...';
-    // Fill categories
+    // Fill categories (match by data-code or title attribute)
     const chips=document.getElementById('cat-astro-chips');
-    if(chips){['astro-ph.SR','astro-ph.EP','astro-ph.GA','astro-ph.IM','astro-ph.CO'].forEach(name=>{
-      chips.querySelectorAll('.chip').forEach(c=>{if(c.textContent.trim()===name){c.className='chip chip-pine';c.innerHTML=name+' <span class="remove">&times;</span>';}});
+    if(chips){['astro-ph.SR','astro-ph.EP','astro-ph.GA','astro-ph.IM','astro-ph.CO'].forEach(code=>{
+      chips.querySelectorAll('.chip').forEach(c=>{if(c.getAttribute('data-code')===code||c.getAttribute('title')===code){c.className='chip chip-pine';c.innerHTML=c.textContent.trim()+' <span class="remove">&times;</span>';}});
     });}
-    document.getElementById('cat-astro-count').textContent='5/6';
+    updateCatCount(document.getElementById('cat-astro'));
     document.getElementById('cat-astro').classList.add('open');
   },600);
   setTimeout(()=>{
@@ -1021,10 +910,10 @@ function autoFillAll(){
     // Fill advanced keyword table too
     const tbody=document.getElementById('kw-tbody');
     const empty=document.getElementById('kw-empty-row');if(empty)empty.remove();
-    const kws=[['gyrochronology',9,'max','main interest',true],['rotation period',8,'high','main interest',false],['open clusters',8,'high','main interest',false],['stellar activity',7,'mid','interested',false],['photometry',3,'low','loosely follow',false]];
+    const kws=[['gyrochronology',9,'max','everything',true],['rotation period',8,'high','main interest',false],['open clusters',8,'high','main interest',false],['stellar activity',7,'high','main interest',false],['photometry',3,'mid','interested',false]];
     kws.forEach(([name,w,cls,label,chk])=>{
       const tr=document.createElement('tr');
-      tr.innerHTML='<td class="kw-name">'+name+'</td><td><div class="kw-weight"><span class="kw-arrow">&#x25B2;</span><span class="kw-score">'+w+'</span><span class="kw-arrow">&#x25BC;</span></div><span class="kw-label '+cls+'">'+label+'</span></td><td style="text-align:center;"><input type="checkbox" '+(chk?'checked ':'')+' style="accent-color:var(--pine);width:14px;height:14px;"></td><td style="text-align:center;color:var(--warm-grey);cursor:pointer;">&times;</td>';
+      tr.innerHTML='<td class="kw-name">'+name+'</td><td><div class="kw-weight"><span class="kw-arrow" onclick="changeKwWeight(this,1)">&#x25B2;</span><span class="kw-score">'+w+'</span><span class="kw-arrow" onclick="changeKwWeight(this,-1)">&#x25BC;</span></div><span class="kw-label '+cls+'">'+label+'</span></td><td style="text-align:center;"><input type="checkbox" '+(chk?'checked ':'')+' style="accent-color:var(--pine);width:14px;height:14px;"></td><td style="text-align:center;color:var(--warm-grey);cursor:pointer;" onclick="this.closest(\'tr\').remove()">&times;</td>';
       tbody.appendChild(tr);
     });
   },1100);
@@ -1036,56 +925,12 @@ function autoFillAll(){
   },1500);
 }
 
-/* ── AI simulate buttons (legacy, kept for compatibility) ── */
-function aiSuggestCats(){
-  const btn=document.getElementById('ai-suggest-cats-btn');if(!btn)return;
-  const st=document.getElementById('ai-cats-status');
-  btn.textContent='Suggesting...';btn.style.opacity='.6';if(st){st.style.display='inline';st.textContent='Analysing...';}
-  setTimeout(()=>{
-    const chips=document.getElementById('cat-astro-chips');
-    if(chips){['astro-ph.SR','astro-ph.EP','astro-ph.GA','astro-ph.IM','astro-ph.CO'].forEach(name=>{
-      chips.querySelectorAll('.chip').forEach(c=>{if(c.textContent.trim()===name){c.className='chip chip-pine';c.innerHTML=name+' <span class="remove">&times;</span>';}});
-    });}
-    document.getElementById('cat-astro-count').textContent='5/6';
-    document.getElementById('cat-astro').classList.add('open');
-    btn.textContent='AI suggest categories';btn.style.opacity='1';
-    const clearBtn=document.getElementById('ai-clear-cats-btn');if(clearBtn)clearBtn.style.display='';
-    if(st)st.textContent='5 suggested';
-  },1000);
-}
-function clearAiCats(){
-  document.querySelectorAll('#cat-container .chip-pine').forEach(c=>{
-    const name=c.textContent.replace(/\s*\u00d7\s*/,'').trim();
-    c.className='chip chip-ghost';c.style.fontStyle='normal';c.innerHTML=name;
-  });
-  document.getElementById('cat-astro-count').textContent='0/6';
-  document.getElementById('ai-clear-cats-btn').style.display='none';
-  document.getElementById('ai-cats-status').style.display='none';
-}
-function aiSuggestKeywords(){
-  const btn=document.getElementById('ai-suggest-kw-btn'),st=document.getElementById('ai-kw-status'),tbody=document.getElementById('kw-tbody');
-  btn.textContent='Suggesting...';btn.style.opacity='.6';st.style.display='inline';st.textContent='Reading papers...';
-  setTimeout(()=>{
-    const empty=document.getElementById('kw-empty-row');if(empty)empty.remove();
-    const kws=[['gyrochronology',9,'max','main interest',true],['rotation period',8,'high','main interest',false],['open clusters',8,'high','main interest',false],['stellar activity',7,'mid','interested',false],['photometry',3,'low','loosely follow',false]];
-    kws.forEach(([name,w,cls,label,chk])=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML='<td class="kw-name">'+name+'</td><td><div class="kw-weight"><span class="kw-arrow">&#x25B2;</span><span class="kw-score">'+w+'</span><span class="kw-arrow">&#x25BC;</span></div><span class="kw-label '+cls+'">'+label+'</span></td><td style="text-align:center;"><input type="checkbox" '+(chk?'checked ':'')+' style="accent-color:var(--pine);width:14px;height:14px;"></td><td style="text-align:center;color:var(--warm-grey);cursor:pointer;">&times;</td>';
-      tbody.appendChild(tr);
-    });
-    btn.textContent='AI suggest keywords';btn.style.opacity='1';
-    document.getElementById('ai-clear-kw-btn').style.display='';
-    st.textContent='5 suggested';
-  },1000);
-}
-function clearAiKeywords(){
-  const tbody=document.getElementById('kw-tbody');
-  tbody.innerHTML='<tr id="kw-empty-row"><td colspan="5" style="text-align:center;color:var(--warm-grey);font-style:italic;padding:16px;">No keywords yet. Add manually below or use AI suggest.</td></tr>';
-  document.getElementById('ai-clear-kw-btn').style.display='none';
-  document.getElementById('ai-kw-status').style.display='none';
-}
+/* Legacy AI suggest functions removed — autoFillAll() handles this now */
 function aiSuggestPeople(){
+  const aiOn=document.getElementById('ai-toggle').checked;
   const btn=document.getElementById('ai-suggest-people-btn'),st=document.getElementById('ai-people-status');
+  if(!aiOn){st.style.display='inline';st.textContent='Turn on AI-assisted setup first.';st.style.color='#C0392B';return;}
+  st.style.color='var(--pine)';
   btn.textContent='Finding...';btn.style.opacity='.6';st.style.display='inline';st.textContent='Scanning publications...';
   setTimeout(()=>{
     document.getElementById('ai-people-results').style.display='block';
@@ -1093,18 +938,132 @@ function aiSuggestPeople(){
     st.textContent='14 found \u2014 click to add';
   },800);
 }
-function aiSuggestColleagues(){aiSuggestPeople();}
 function clearColleagues(){
   const chips=document.getElementById('coll-chips');
-  chips.innerHTML='<span class="chip chip-ghost">+ add person</span>';
+  chips.innerHTML='<span class="chip chip-ghost" onclick="document.getElementById(\'person-add-input\').focus()">+ add person</span>';
   const btn=document.getElementById('coll-clear-btn');if(btn)btn.style.display='none';
+  updateReclassifyList();
 }
+
+/* ── Add keyword ── */
+function addKeyword(){
+  const input=document.getElementById('kw-add-input');
+  const name=input.value.trim();
+  if(!name)return;
+  const chips=document.getElementById('kw-chips');
+  const ghost=chips.querySelector('.chip-ghost');
+  const chip=document.createElement('span');
+  chip.className='chip chip-pine';
+  chip.innerHTML=name+' <span class="remove" onclick="this.parentElement.remove()">&times;</span>';
+  chips.insertBefore(chip,ghost);
+  // Also add to advanced keyword table
+  const tbody=document.getElementById('kw-tbody');
+  const empty=document.getElementById('kw-empty-row');if(empty)empty.remove();
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td class="kw-name">'+name+'</td><td><div class="kw-weight"><span class="kw-arrow" onclick="changeKwWeight(this,1)">&#x25B2;</span><span class="kw-score">7</span><span class="kw-arrow" onclick="changeKwWeight(this,-1)">&#x25BC;</span></div><span class="kw-label mid">main interest</span></td><td style="text-align:center;"><input type="checkbox" style="accent-color:var(--pine);width:14px;height:14px;"></td><td style="text-align:center;color:var(--warm-grey);cursor:pointer;" onclick="this.closest(\'tr\').remove()">&times;</td>';
+  tbody.appendChild(tr);
+  input.value='';
+  input.focus();
+}
+function changeKwWeight(el,delta){
+  const scoreEl=el.parentElement.querySelector('.kw-score');
+  let v=parseInt(scoreEl.textContent)+delta;
+  v=Math.max(0,Math.min(10,v));
+  scoreEl.textContent=v;
+  const labelEl=el.parentElement.nextElementSibling;
+  if(v<=2){labelEl.className='kw-label low';labelEl.textContent='loosely follow';}
+  else if(v<=5){labelEl.className='kw-label mid';labelEl.textContent='interested';}
+  else if(v<=8){labelEl.className='kw-label high';labelEl.textContent='main interest';}
+  else{labelEl.className='kw-label max';labelEl.textContent='everything';}
+}
+
+/* ── Add person ── */
+function addPerson(){
+  const input=document.getElementById('person-add-input');
+  const name=input.value.trim();
+  if(!name)return;
+  _addPersonChip(name);
+  input.value='';
+  input.focus();
+}
+function addPersonFromChip(chipEl,name){
+  _addPersonChip(name);
+  chipEl.style.opacity='.3';
+  chipEl.style.pointerEvents='none';
+}
+function _addPersonChip(name){
+  const chips=document.getElementById('coll-chips');
+  const ghost=chips.querySelector('.chip-ghost');
+  const chip=document.createElement('span');
+  chip.className='chip chip-pine';
+  chip.dataset.name=name;
+  chip.innerHTML=name+' <span class="remove" onclick="this.parentElement.remove();updateReclassifyList()">&times;</span>';
+  chips.insertBefore(chip,ghost);
+  document.getElementById('coll-clear-btn').style.display='';
+  updateReclassifyList();
+}
+function updateReclassifyList(){
+  const list=document.getElementById('people-reclassify-list');
+  const people=[...document.querySelectorAll('#coll-chips .chip-pine')].map(c=>c.dataset.name);
+  if(people.length===0){list.innerHTML='<span style="font-size:12px;color:var(--warm-grey);font-style:italic;">Add people above first, then reclassify here.</span>';return;}
+  list.innerHTML=people.map(name=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--card-border);"><span style="font-size:13px;">'+name+'</span><div class="radio-group" style="gap:4px;margin:0;flex-shrink:0;"><div class="radio-option active" onclick="setRadio(this)" style="padding:4px 10px;font-size:11px;"><div class="radio-title" style="font-size:11px;">Colleague</div></div><div class="radio-option" onclick="setRadio(this)" style="padding:4px 10px;font-size:11px;"><div class="radio-title" style="font-size:11px;">Research author</div></div></div></div>').join('');
+}
+
+/* ── Clear ORCID ── */
+function clearOrcid(){
+  document.getElementById('orcid-result').style.display='none';
+  document.getElementById('manual-profile').style.display='block';
+  document.getElementById('skip-orcid-link').style.display='none';
+  var input=document.getElementById('orcid-input');if(input)input.value='';
+  // Reset arxiv name chips
+  var chips=document.getElementById('arxiv-name-chips');
+  if(chips)chips.innerHTML='<span class="chip chip-ghost">+ add name variant</span>';
+}
+
 function setRadio(el){el.parentElement.querySelectorAll('.radio-option').forEach(o=>o.classList.remove('active'));el.classList.add('active');}
 function pickFreq(el,label){setRadio(el);document.getElementById('freq-label').textContent=label;setTimeout(()=>{document.getElementById('freq-picker').style.display='none';},200);}
 function toggleAdvanced(linkEl,targetId){const t=document.getElementById(targetId);const open=t.style.display!=='none';t.style.display=open?'none':'block';linkEl.innerHTML=linkEl.innerHTML.replace(open?'\u2191':'\u2193',open?'\u2193':'\u2191');}
 
 function toggleCat(id){document.getElementById(id).classList.toggle('open');}
-function toggleFoldout(id){document.getElementById(id).classList.toggle('collapsed');}
+
+/* ── Category chip selection ── */
+document.addEventListener('click',function(e){
+  const chip=e.target.closest('.cat-expander .chip');
+  if(!chip||chip.classList.contains('chip-pine')&&!e.target.classList.contains('remove'))return;
+  if(e.target.classList.contains('remove')){
+    const name=chip.textContent.replace(/\s*\u00d7\s*/,'').trim();
+    chip.className='chip chip-ghost';chip.style.fontStyle='normal';chip.innerHTML=name;
+    chip.style.cursor='pointer';
+  }else if(chip.classList.contains('chip-ghost')){
+    const name=chip.textContent.trim();
+    chip.className='chip chip-pine';chip.innerHTML=name+' <span class="remove">&times;</span>';
+  }
+  updateCatCount(chip.closest('.cat-expander'));
+});
+function updateCatCount(expander){
+  if(!expander)return;
+  const countEl=expander.querySelector('.cat-count');
+  if(!countEl)return;
+  const total=expander.querySelectorAll('.chip').length;
+  const selected=expander.querySelectorAll('.chip-pine').length;
+  countEl.textContent=selected+'/'+total;
+}
+function selectAllCats(containerId){
+  const container=document.getElementById(containerId);
+  container.querySelectorAll('.chip-ghost').forEach(c=>{
+    const name=c.textContent.trim();
+    c.className='chip chip-pine';c.innerHTML=name+' <span class="remove">&times;</span>';
+  });
+  updateCatCount(container.closest('.cat-expander'));
+}
+function clearAllCats(containerId){
+  const container=document.getElementById(containerId);
+  container.querySelectorAll('.chip-pine').forEach(c=>{
+    const name=c.textContent.replace(/\s*\u00d7\s*/,'').trim();
+    c.className='chip chip-ghost';c.style.fontStyle='normal';c.innerHTML=name;
+  });
+  updateCatCount(container.closest('.cat-expander'));
+}
 
 let currentCardPreset='default';
 let scoreVisible=true;
@@ -1163,11 +1122,6 @@ function setPreset(el,preset){
   if(ep)ep.style.display=scoreVisible?'':'none';
   syncCardPreview();
 }
-function getCardLabel(){
-  if(currentCardPreset==='custom')return 'Custom card';
-  return currentCardPreset.charAt(0).toUpperCase()+currentCardPreset.slice(1)+' card';
-}
-
 /* ── Upload overlay ── */
 function openUpload(){document.getElementById('upload-overlay').classList.add('show');}
 function closeUpload(){document.getElementById('upload-overlay').classList.remove('show');document.getElementById('upload-status').style.display='none';}
@@ -1181,58 +1135,41 @@ function handleUpload(input){
 const dz=document.getElementById('upload-dropzone');
 if(dz){dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)handleUpload({files:[f]});});}
 
-/* ── Student flow functions ── */
-function validateStudentEmail(){
-  const v=document.getElementById('stu-email').value.trim().toLowerCase();
-  const s=document.getElementById('stu-email-status');
-  if(!v){s.className='status';s.style.display='none';return;}
-  if(/^au\d{6}$/.test(v)){s.className='status ok';s.textContent=v+'@uni.au.dk';s.style.display='inline-block';}
-  else{s.className='status err';s.textContent='Must be au + 6 digits';s.style.display='inline-block';}
+/* ── Mini flow functions ── */
+function addMiniKeyword(){
+  const input=document.getElementById('mini-kw-input');
+  const name=input.value.trim();
+  if(!name)return;
+  const tbody=input.closest('tbody');
+  const addRow=input.closest('tr');
+  const tr=document.createElement('tr');
+  tr.style.borderBottom='1px solid var(--card-border)';
+  tr.innerHTML='<td style="padding:6px 8px;">'+name+'</td><td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,1)">&#x25B2;</span> <span class="mini-kw-score"><strong>7</strong></span> <span class="tag-arrow" style="cursor:pointer;" onclick="changeMiniKwWeight(this,-1)">&#x25BC;</span></td><td style="text-align:center;"><input type="checkbox"></td><td><span class="remove" style="cursor:pointer;" onclick="this.closest(\'tr\').remove()">&times;</span></td>';
+  tbody.insertBefore(tr,addRow);
+  input.value='';
+  input.focus();
 }
-function checkStudentPass(){
-  const p=document.getElementById('stu-pass').value,c=document.getElementById('stu-pass2').value,el=document.getElementById('stu-pass-strength');
-  if(!p){el.textContent='';return;}
-  if(p.length<4){el.style.color='#C0392B';el.textContent='Too short';}
-  else if(p.length<8){el.style.color='#a08520';el.textContent='OK';}
-  else{el.style.color='var(--pine)';el.textContent='Strong';}
-  if(c&&c!==p){el.style.color='#C0392B';el.textContent='Passwords don\u2019t match';}
+function changeMiniKwWeight(el,delta){
+  const scoreSpan=el.parentElement.querySelector('.mini-kw-score strong');
+  if(!scoreSpan)return;
+  let v=parseInt(scoreSpan.textContent)+delta;
+  v=Math.max(0,Math.min(10,v));
+  scoreSpan.textContent=v;
 }
-function togglePkg(el){el.classList.toggle('selected');}
-function stuValidateStep1(){
-  const e=document.getElementById('stu-email').value.trim().toLowerCase();
-  const p=document.getElementById('stu-pass').value;
-  const p2=document.getElementById('stu-pass2').value;
-  if(!/^au\d{6}$/.test(e)){document.getElementById('stu-email-status').className='status err';document.getElementById('stu-email-status').textContent='Must be au + 6 digits';document.getElementById('stu-email-status').style.display='inline-block';return;}
-  if(p.length<4){document.getElementById('stu-pass-strength').style.color='#C0392B';document.getElementById('stu-pass-strength').textContent='Password too short';return;}
-  if(p!==p2){document.getElementById('stu-pass-strength').style.color='#C0392B';document.getElementById('stu-pass-strength').textContent='Passwords don\u2019t match';return;}
-  done('stu-1');go('stu-2');
-}
-function stuValidateStep2(){
-  const sel=document.querySelectorAll('#flow-student .package-card.selected');
-  if(sel.length===0){
-    const grid=document.querySelector('#flow-student .package-grid');
-    grid.style.outline='2px solid #C0392B';grid.style.outlineOffset='4px';grid.style.borderRadius='8px';
-    setTimeout(()=>{grid.style.outline='';grid.style.outlineOffset='';},2000);
-    return;
-  }
-  done('stu-2');go('stu-3');
-}
-function stuSubscribe(){
-  const btn=document.getElementById('stu-subscribe-btn'),st=document.getElementById('stu-subscribe-status');
-  const email=document.getElementById('stu-email').value.trim().toLowerCase()||'au612345';
-  const pkgs=[...document.querySelectorAll('#flow-student .package-card.selected')].map(c=>c.querySelector('.pkg-name').textContent.toLowerCase().replace(/[^a-z]/g,'-'));
-  btn.textContent='Subscribing...';btn.style.opacity='.6';
-  st.style.display='block';st.style.color='var(--warm-grey)';
-  st.innerHTML='<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--warm-grey);">POST /api/students</span>';
-  setTimeout(()=>{
-    btn.textContent='Subscribed!';btn.style.background='var(--pine-light)';
-    st.style.color='var(--pine)';
-    st.innerHTML='<div style="margin-bottom:6px;">Confirmation email sent to '+email+'@uni.au.dk</div>'+
-      '<div style="background:var(--ash-white);border:1px solid var(--card-border);border-radius:4px;padding:8px 10px;font-family:DM Mono,monospace;font-size:10px;color:var(--warm-grey);text-align:left;white-space:pre;line-height:1.6;">'+
-      '{ "ok": true,\n  "subscription": {\n    "package_ids": '+JSON.stringify(pkgs)+',\n    "max_papers_per_week": '+
-      (document.querySelector('#flow-student .radio-option.active .radio-title')?.textContent.includes('15')?'15':'6')+
-      '\n  },\n  "confirmation_email_sent": true }</div>';
-  },1200);
+
+function addMiniPerson(){
+  const input=document.getElementById('mini-person-input');
+  const name=input.value.trim();
+  if(!name)return;
+  const chips=document.getElementById('mini-coll-chips');
+  const ghost=chips.querySelector('.chip-ghost');
+  const chip=document.createElement('span');
+  chip.className='chip chip-pine';
+  chip.innerHTML=name+' <span class="remove" onclick="this.parentElement.remove()">&times;</span>';
+  chips.insertBefore(chip,ghost);
+  document.getElementById('mini-coll-clear').style.display='';
+  input.value='';
+  input.focus();
 }
 
 </script>

@@ -412,8 +412,10 @@
       </div>
 
       <div style="margin-top:14px;">
+        <span id="skip-orcid-link" style="font-size:12px;color:var(--warm-grey);cursor:pointer;text-decoration:underline;display:inline-block;margin-bottom:10px;" onclick="document.getElementById('manual-profile').style.display='block';this.style.display='none';">Skip auto-fill &mdash; I'll type it myself</span>
+      </div>
+      <div>
         <button class="btn-primary" onclick="done('step-1');go('step-2')">Continue &rarr;</button>
-        <span id="skip-orcid-link" style="font-size:12px;color:var(--warm-grey);margin-left:12px;cursor:pointer;text-decoration:underline;" onclick="document.getElementById('manual-profile').style.display='block';this.style.display='none';">Skip auto-fill &mdash; I'll type it myself</span>
       </div>
     </div>
   </div>
@@ -533,7 +535,7 @@
       </div>
 
       <div class="explainer" style="margin-top:12px;">
-        Everyone you add gets their own section in the digest, even if their papers are off-topic for you. To give someone a scoring boost instead (they may be filtered if off-topic), mark them as a research author in your config.yaml after download.
+        Everyone you add gets their own section in the digest, even if their papers are off-topic for you. For advanced author scoring options, see the comments in your downloaded config.yaml.
       </div>
 
       <button class="btn-primary" onclick="done('step-3');go('step-4')" style="margin-top:14px;">Continue &rarr;</button>
@@ -623,7 +625,7 @@
 
       <!-- Self-hosting options (collapsed) -->
       <div style="margin-top:8px;">
-        <span class="section-desc" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;" onclick="toggleAdvanced(this,'selfhost-options')">Email settings (Gmail / Outlook) &#x2193;</span>
+        <span class="section-desc" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;" onclick="toggleAdvanced(this,'selfhost-options')">Delivery settings (email, send time, score threshold) &#x2193;</span>
         <div id="selfhost-options" style="display:none;margin-top:8px;padding:12px;background:var(--ash-white);border:1px solid var(--card-border);border-radius:6px;">
           <div class="section-desc" style="margin:0 0 8px;">Only needed if you're sending digests from your own email account, without a relay token.</div>
           <div class="field-row">
@@ -662,7 +664,7 @@
         <strong style="color:var(--ash-black);">Fork</strong> = your own private copy of this project on GitHub. The digest runs from your copy, and any changes you make won't affect anyone else.
       </div>
       <div style="font-size:12px;color:var(--warm-grey);margin-top:4px;line-height:1.5;">
-        <strong style="color:var(--ash-black);">Note:</strong> GitHub forks are public by default. Your config (including your email) will be visible. To make it private: Settings &rarr; Danger Zone &rarr; Change visibility.
+        <strong style="color:var(--ash-black);">Note:</strong> GitHub forks are public by default. Your config (including your email) will be visible. To make it private: Settings &rarr; Danger Zone (just GitHub's name for advanced settings &mdash; nothing scary) &rarr; Change visibility.
       </div>
     </div>
   </div>
@@ -772,18 +774,16 @@
 
       <div class="section-label">Your keywords</div>
       <div class="section-desc">Add any terms you're interested in. Score from 0 (slight interest) to 10 (main interest). Check "Always" to never miss papers on that topic.</div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;" id="mini-kw-table">
         <thead><tr style="border-bottom:2px solid var(--card-border);">
           <th style="text-align:left;padding:6px 8px;font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--warm-grey);">Keyword</th>
           <th style="text-align:center;padding:6px 4px;font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--warm-grey);width:80px;">Weight</th>
           <th style="text-align:center;padding:6px 4px;font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--warm-grey);width:55px;">Always</th>
           <th style="width:24px;"></th>
         </tr></thead>
-        <tbody>
+        <tbody id="mini-kw-tbody">
           <tr style="border-bottom:1px solid var(--card-border);background:var(--gold-wash);"><td colspan="4" style="padding:4px 8px;font-size:11px;color:var(--gold-dark);">These are examples — replace with your own.</td></tr>
-          <tr style="border-bottom:1px solid var(--card-border);"><td style="padding:6px 8px;">machine learning</td><td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;">&#x25B2;</span> <strong>8</strong> <span class="tag-arrow" style="cursor:pointer;">&#x25BC;</span></td><td style="text-align:center;"><input type="checkbox"></td><td><span class="remove" style="cursor:pointer;">&times;</span></td></tr>
-          <tr style="border-bottom:1px solid var(--card-border);"><td style="padding:6px 8px;">exoplanets</td><td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;">&#x25B2;</span> <strong>6</strong> <span class="tag-arrow" style="cursor:pointer;">&#x25BC;</span></td><td style="text-align:center;"><input type="checkbox"></td><td><span class="remove" style="cursor:pointer;">&times;</span></td></tr>
-          <tr style="border-bottom:1px solid var(--card-border);background:var(--ash-white);"><td colspan="4" style="padding:6px 8px;"><span class="chip-ghost" style="display:inline-block;">+ add keyword</span></td></tr>
+          <tr style="border-bottom:1px solid var(--card-border);background:var(--ash-white);"><td colspan="4" style="padding:6px 8px;"><span class="chip-ghost" style="display:inline-block;" onclick="addMiniKeywordFromInput()">+ add keyword</span></td></tr>
         </tbody>
       </table>
       <div class="note">0 = slight interest &middot; 5 = moderate &middot; 10 = main interest &middot; Always = show every matching paper</div>
@@ -862,7 +862,7 @@
         <div style="font-size:13px;font-weight:600;">Fork the repo</div>
         <div style="font-size:12px;color:var(--warm-grey);margin-top:2px;"><a href="https://github.com/SilkeDainese/arxiv-digest" target="_blank" style="color:var(--pine);">SilkeDainese/arxiv-digest</a> &rarr; Fork</div>
         <div style="font-size:12px;color:var(--warm-grey);margin-top:4px;line-height:1.5;"><strong style="color:var(--ash-black);">Fork</strong> = your own private copy of this project on GitHub. Changes you make won't affect anyone else.</div>
-        <div style="font-size:12px;color:var(--warm-grey);margin-top:4px;line-height:1.5;"><strong style="color:var(--ash-black);">Note:</strong> GitHub forks are public by default. Your config (including your email) will be visible. To make it private: Settings &rarr; Danger Zone &rarr; Change visibility.</div>
+        <div style="font-size:12px;color:var(--warm-grey);margin-top:4px;line-height:1.5;"><strong style="color:var(--ash-black);">Note:</strong> GitHub forks are public by default. Your config (including your email) will be visible. To make it private: Settings &rarr; Danger Zone (just GitHub's name for advanced settings &mdash; nothing scary) &rarr; Change visibility.</div>
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
@@ -1038,6 +1038,7 @@ async function submitAccess(){
       s.className = 'access-status approved';
       s.textContent = 'Approved \u2014 got ' + data.unlocked.join(' + ');
       s.style.display = 'inline-block';
+      setTimeout(() => { s.style.display = 'none'; }, 6000);
     } else {
       s.className = 'access-status denied';
       s.textContent = data.error || 'Not recognised';
@@ -1070,10 +1071,47 @@ function copyRelayToken(){
 
 // ── Mode switching ──
 function setMode(el){
-  document.querySelectorAll('.mode-option').forEach(m => m.classList.remove('active'));
-  el.classList.add('active');
   const modes = ['researcher','mini'];
   const idx = [...el.parentElement.children].indexOf(el);
+  const newMode = modes[idx];
+  const currentlyActive = document.querySelector('.mode-option.active');
+  const currentIdx = currentlyActive ? [...currentlyActive.parentElement.children].indexOf(currentlyActive) : -1;
+  if(idx === currentIdx) return;  // no change
+
+  const hasProgress = state.colleagues.length > 0
+    || Object.keys(state.keywords).length > 0
+    || state.selectedCats.length > 0
+    || Object.keys(miniKwState).length > (newMode === 'researcher' ? 2 : 0);
+
+  if(hasProgress && !confirm('Switching modes will reset your progress. Continue?')) return;
+
+  // Reset shared state
+  state.colleagues = [];
+  state.keywords = {};
+  state.selectedCats = [];
+  state.orcidData = null;
+  // Reset researcher keyword chips + table
+  const kwChips = document.getElementById('kw-chips');
+  if(kwChips) kwChips.innerHTML = '<span class="chip chip-ghost" onclick="document.getElementById(\'kw-input\').focus()">+ add keyword</span>';
+  const kwTbody = document.getElementById('kw-tbody');
+  if(kwTbody) kwTbody.innerHTML = '<tr id="kw-empty-row"><td colspan="4" style="text-align:center;color:var(--warm-grey);font-style:italic;padding:16px;">No keywords yet. Add above or use Auto-fill.</td></tr>';
+  // Reset researcher colleague chips
+  const collChips = document.getElementById('coll-chips');
+  if(collChips) collChips.innerHTML = '<span class="chip chip-ghost" onclick="document.getElementById(\'coll-input\').focus()">+ add person</span>';
+  const collClear = document.getElementById('coll-clear-btn'); if(collClear) collClear.style.display = 'none';
+  // Reset mini keyword state and re-init examples
+  Object.keys(miniKwState).forEach(k => delete miniKwState[k]);
+  const miniTbody = document.getElementById('mini-kw-tbody');
+  if(miniTbody) {
+    miniTbody.innerHTML = '<tr style="border-bottom:1px solid var(--card-border);background:var(--gold-wash);"><td colspan="4" style="padding:4px 8px;font-size:11px;color:var(--gold-dark);">These are examples \u2014 replace with your own.</td></tr>'
+      + '<tr style="border-bottom:1px solid var(--card-border);background:var(--ash-white);"><td colspan="4" style="padding:6px 8px;"><span class="chip-ghost" style="display:inline-block;" onclick="addMiniKeywordFromInput()">+ add keyword</span></td></tr>';
+    initMiniExampleKeywords();
+  }
+  // Reset mini colleague chips
+  clearMiniColleagues();
+
+  document.querySelectorAll('.mode-option').forEach(m => m.classList.remove('active'));
+  el.classList.add('active');
   modes.forEach((m,i) => {
     document.getElementById('flow-'+m).classList.toggle('active', i===idx);
   });
@@ -1147,6 +1185,13 @@ function go(id){
   document.querySelectorAll('.step').forEach(s => { if(s.id !== id) s.classList.add('collapsed'); });
   const el = document.getElementById(id);
   el.classList.remove('collapsed');
+  if(id === 'step-2') {
+    const active = document.getElementById('orcid-result')?.style?.display !== 'none'
+      ? 'research-desc'
+      : (document.getElementById('manual-profile')?.style?.display !== 'none' ? 'research-desc-manual' : null);
+    if(active) syncResearchDesc(active);
+  }
+  if(id === 'step-4') updateResearcherCounts();
   setTimeout(() => el.scrollIntoView({behavior:'smooth', block:'start'}), 50);
 }
 
@@ -1512,6 +1557,16 @@ function commitArxivName() {
   hideArxivNameInput();
 }
 
+// ── Update researcher counts summary in Step 4 ──
+function updateResearcherCounts() {
+  const countsEl = document.getElementById('researcher-counts');
+  if (!countsEl) return;
+  const cats = state.selectedCats?.length || 0;
+  const kws = Object.keys(state.keywords || {}).length;
+  const colls = (state.colleagues || []).length;
+  countsEl.textContent = `${cats} categories \u00b7 ${kws} keywords \u00b7 ${colls} people`;
+}
+
 // ── Config download (real API) ──
 async function downloadConfig(){
   const descStep2 = document.getElementById('research-desc-step2');
@@ -1593,12 +1648,17 @@ async function downloadConfig(){
 
 // ── Mini flow config download ──
 async function downloadMiniConfig(){
+  // Read current weights from the DOM (overrides miniKwState if user edited)
   const kws = {};
-  document.querySelectorAll('#flow-mini table tbody tr:not(:last-child)').forEach(tr => {
+  document.querySelectorAll('#mini-kw-tbody tr').forEach(tr => {
     const name = tr.querySelector('td')?.textContent?.trim();
     const scoreEl = tr.querySelector('strong');
-    if(name && scoreEl) kws[name] = parseInt(scoreEl.textContent);
+    if(name && scoreEl && !tr.style.background?.includes('gold') && !tr.style.background?.includes('ash')) {
+      kws[name] = parseInt(scoreEl.textContent);
+    }
   });
+  // Fallback to state if DOM parse yielded nothing
+  if(!Object.keys(kws).length) Object.assign(kws, miniKwState);
 
   const modeEl = document.querySelector('#mini-3 .radio-group:first-of-type .radio-option.active .radio-title');
   const digestMode = modeEl?.textContent?.toLowerCase().includes('in-depth') ? 'in_depth' : 'highlights';
@@ -2003,6 +2063,69 @@ function syncResearchDesc(sourceId) {
   if(el) el.addEventListener('blur', () => syncResearchDesc(id));
 });
 
+// ── Mini flow keyword helpers ──
+const miniKwState = {};  // name → weight
+
+function makeMiniKwRow(name, weight) {
+  const w = Math.max(0, Math.min(10, parseInt(weight) || 7));
+  const safeN = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const tr = document.createElement('tr');
+  tr.style.borderBottom = '1px solid var(--card-border)';
+  tr.innerHTML = `<td style="padding:6px 8px;">${escapeHtml(name)}</td>`
+    + `<td style="text-align:center;"><span class="tag-arrow" style="cursor:pointer;" onclick="miniAdjustWeight(this,1)">&#x25B2;</span> <strong>${w}</strong> <span class="tag-arrow" style="cursor:pointer;" onclick="miniAdjustWeight(this,-1)">&#x25BC;</span></td>`
+    + `<td style="text-align:center;"><input type="checkbox"></td>`
+    + `<td><span class="remove" style="cursor:pointer;" onclick="removeMiniKeyword(this,'${safeN}')">&times;</span></td>`;
+  return tr;
+}
+
+function addMiniKeyword(name, weight) {
+  name = (name || '').trim().toLowerCase();
+  if(!name || miniKwState[name] !== undefined) return;
+  const w = parseInt(weight) || 7;
+  miniKwState[name] = w;
+  const tbody = document.getElementById('mini-kw-tbody');
+  const addRow = tbody.querySelector('tr:last-child');
+  tbody.insertBefore(makeMiniKwRow(name, w), addRow);
+}
+
+function addMiniKeywordFromInput() {
+  const inp = document.getElementById('mini-kw-input');
+  if(inp) { inp.focus(); return; }
+  // Inline input in add row
+  const addRow = document.querySelector('#mini-kw-tbody tr:last-child td');
+  if(!addRow) return;
+  const input = document.createElement('input');
+  input.type = 'text'; input.id = 'mini-kw-input';
+  input.className = 'ai-key-input'; input.placeholder = 'Type keyword and press Enter';
+  input.style.cssText = 'width:200px;border-radius:4px;font-size:12px;padding:4px 8px;';
+  input.onkeydown = e => {
+    if(e.key === 'Enter') { addMiniKeyword(input.value); input.remove(); delete window._miniKwInputActive; e.preventDefault(); }
+    if(e.key === 'Escape') { input.remove(); delete window._miniKwInputActive; }
+  };
+  input.onblur = () => { setTimeout(() => { if(document.getElementById('mini-kw-input')) { input.remove(); } }, 200); };
+  addRow.appendChild(input);
+  input.focus();
+}
+
+function removeMiniKeyword(removeEl, name) {
+  removeEl.closest('tr').remove();
+  delete miniKwState[name];
+}
+
+function miniAdjustWeight(arrowEl, delta) {
+  const strong = arrowEl.parentElement.querySelector('strong');
+  let v = parseInt(strong.textContent) + delta;
+  v = Math.max(0, Math.min(10, v));
+  strong.textContent = v;
+  const name = arrowEl.closest('tr').querySelector('td')?.textContent?.trim()?.toLowerCase();
+  if(name && miniKwState[name] !== undefined) miniKwState[name] = v;
+}
+
+function initMiniExampleKeywords() {
+  addMiniKeyword('machine learning', 8);
+  addMiniKeyword('exoplanets', 6);
+}
+
 // ── Mini flow colleague helpers ──
 function addMiniColleague(value) {
   const name = (value || '').trim();
@@ -2049,6 +2172,7 @@ function clearMiniColleagues() {
 // ── Init on load ──
 renderCategories();
 updateRelayTokenRow();
+initMiniExampleKeywords();
 
 </script>
 

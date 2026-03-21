@@ -157,6 +157,33 @@
   .explainer { background:var(--ash-white); border:1px solid var(--card-border); border-radius:6px; padding:10px 14px; margin:6px 0 10px; font-size:12px; color:var(--warm-grey); line-height:1.5; }
   .explainer strong { color:var(--ash-black); }
 
+  /* ── Information hierarchy tiers ── */
+  /* Tier 2: helper text / descriptions — lighter, smaller */
+  .helper-text { font-size:12px; color:var(--warm-grey); line-height:1.5; margin:0 0 8px; font-weight:300; }
+  /* Tier 3: fold-out "how it works" details — smallest, most muted */
+  .how-it-works { font-size:11px; color:var(--warm-grey); font-weight:300; line-height:1.6; }
+  .how-it-works summary { font-family:'DM Mono',monospace; font-size:10px; color:var(--warm-grey); cursor:pointer; user-select:none; list-style:none; display:flex; align-items:center; gap:4px; padding:4px 0; }
+  .how-it-works summary::marker { display:none; }
+  .how-it-works summary .fold-arrow { font-size:9px; transition:transform .15s; }
+  details.how-it-works[open] summary .fold-arrow { transform:rotate(90deg); }
+  .how-it-works .fold-body { padding:6px 0 2px 14px; }
+  /* Optional section label — lighter than primary labels */
+  .label-optional { font-family:'DM Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--card-border); margin-bottom:4px; display:block; font-weight:400; }
+  /* Muted field label for secondary/optional fields */
+  .field label.muted { color:var(--card-border); font-weight:300; }
+  /* ORCID autofill — secondary collapsed panel */
+  .orcid-autofill { background:var(--ash-white); border:1px solid var(--card-border); border-radius:8px; margin:0 0 14px; overflow:hidden; }
+  .orcid-autofill summary { list-style:none; display:flex; align-items:center; justify-content:space-between; padding:10px 14px; cursor:pointer; user-select:none; font-size:12px; color:var(--warm-grey); font-weight:400; }
+  .orcid-autofill summary::marker { display:none; }
+  .orcid-autofill summary .orcid-fold-arrow { font-size:11px; color:var(--card-border); transition:transform .15s; }
+  details.orcid-autofill[open] summary .orcid-fold-arrow { transform:rotate(90deg); }
+  .orcid-autofill-body { padding:12px 14px; border-top:1px solid var(--card-border); }
+  /* Algorithm pipeline diagram */
+  .algo-pipeline { display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin:8px 0; font-family:'DM Mono',monospace; font-size:11px; color:var(--warm-grey); }
+  .algo-pipeline .pipe-step { background:var(--pine-wash); color:var(--pine); padding:3px 8px; border-radius:4px; font-size:10px; white-space:nowrap; }
+  .algo-pipeline .pipe-step.optional { background:var(--gold-wash); color:var(--gold-dark); border:1px solid var(--gold-border); }
+  .algo-pipeline .pipe-arrow { color:var(--card-border); font-size:12px; }
+
   .btn-primary { background:var(--pine); color:white; border:none; border-radius:6px; padding:10px 20px; font-size:13px; cursor:pointer; margin-top:12px; }
   .btn-primary:hover { background:var(--pine-light); }
   .btn-secondary { background:white; color:var(--pine); border:1px solid var(--pine); border-radius:6px; padding:8px 14px; font-size:12px; cursor:pointer; }
@@ -284,6 +311,27 @@
 <!-- ═══════ RESEARCHER FLOW ═══════ -->
 <div class="mode-flow active" id="flow-researcher">
 
+<!-- How the algorithm works — tertiary reference info -->
+<div style="max-width:660px;margin:10px auto 0;">
+  <details class="how-it-works" style="background:white;border:1px solid var(--card-border);border-radius:8px;padding:0 14px;">
+    <summary><span class="fold-arrow">&#x276F;</span> How your digest scores papers</summary>
+    <div class="fold-body" style="padding-bottom:10px;">
+      <div class="algo-pipeline">
+        <span class="pipe-step">Your keywords</span>
+        <span class="pipe-arrow">&#x2192;</span>
+        <span class="pipe-step">Match papers</span>
+        <span class="pipe-arrow">&#x2192;</span>
+        <span class="pipe-step optional">AI re-ranks (optional)</span>
+        <span class="pipe-arrow">&#x2192;</span>
+        <span class="pipe-step">Author boost</span>
+        <span class="pipe-arrow">&#x2192;</span>
+        <span class="pipe-step">Your inbox</span>
+      </div>
+      <p style="margin-top:6px;">Keywords are matched against titles and abstracts and each paper gets a base score. If you add an AI key, the AI reads your research description and re-ranks the results — catching relevant papers keywords would miss. Papers by people you follow always appear, regardless of score.</p>
+    </div>
+  </details>
+</div>
+
 <div class="ai-toggle-bar">
   <div class="ai-toggle-row">
     <div class="ai-toggle-label">AI scoring<small>Add a free AI key to auto-fill your profile AND score papers daily. Without it, keyword matching still works.</small></div>
@@ -292,11 +340,9 @@
   <div class="ai-key-row" id="ai-key-row" style="align-items:flex-start;">
     <div style="width:100%;margin-bottom:10px;padding:10px 12px;background:var(--ash-white);border:1px solid var(--card-border);border-radius:6px;font-size:12px;color:var(--warm-grey);line-height:1.6;">
       <strong style="color:var(--ash-black);">Optional — your digest works fine without this.</strong> Without an AI key, it matches papers by keywords. With one, it reads your research description and understands what's actually relevant. Much better results.
-      <details style="margin-top:6px;">
-        <summary style="font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:4px;color:var(--warm-grey);">
-          <span style="font-size:9px;">&#x276F;</span> What's an API key?
-        </summary>
-        <div style="padding:6px 0 2px 14px;line-height:1.5;">
+      <details class="how-it-works" style="margin-top:6px;">
+        <summary><span class="fold-arrow">&#x276F;</span> What's an API key?</summary>
+        <div class="fold-body">
           Think of it like a library card for an AI service. You sign up (free for Gemini), they give you a code, you paste it here. The digest uses it to read and score each paper before it lands in your inbox.
         </div>
       </details>
@@ -325,80 +371,74 @@
     <div class="step-header" onclick="toggleStep('step-1')"><span class="step-num">1</span><span class="step-title">About You</span><span class="step-summary" id="sum-step-1"></span><span class="step-badge">optional</span><span class="step-chevron">&#x276F;</span></div>
     <div class="step-body">
       <div style="background:var(--pine-wash);border:1px solid var(--pine-border);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--pine);">Already set up? <span style="text-decoration:underline;cursor:pointer;" onclick="openUpload()">Upload your config.yaml to edit your settings.</span></div>
-      <p>If you have an ORCID, we can auto-fill your profile from your publications. Otherwise, fill in your research focus below &mdash; it works just as well.</p>
 
-      <details style="font-size:11px;color:var(--warm-grey);margin:-4px 0 12px;">
-        <summary style="cursor:pointer;font-size:11px;">What is ORCID?</summary>
-        <p style="margin:4px 0 0;line-height:1.5;">Your researcher ID — a permanent identifier that links to your publication list. It lets us auto-fill your research description and co-authors. <a href="https://orcid.org" target="_blank" style="color:var(--pine);">orcid.org</a> if you need to register.</p>
+      <!-- Primary path: manual profile (always visible) -->
+      <div class="field-row">
+        <div class="field"><label>Your name</label><div class="mock-input" id="manual-name" contenteditable="true" spellcheck="false" data-placeholder="Your name...">Your name...</div></div>
+        <div class="field"><label>Institution</label><div class="mock-input" id="manual-institution" contenteditable="true" spellcheck="false" data-placeholder="University / lab...">University / lab...</div></div>
+      </div>
+
+      <div class="section-label">Research description</div>
+      <p class="helper-text">Describe your research like you'd tell a colleague. Mention methods, targets, instruments. More specific = better results.</p>
+      <div class="field" style="margin-bottom:4px;"><div class="mock-textarea" id="research-desc-manual" contenteditable="true" spellcheck="false" data-placeholder="Write your research focus here..." style="min-height:80px;">Write your research focus here...</div></div>
+
+      <!-- ORCID: secondary collapsed option -->
+      <details class="orcid-autofill" id="orcid-autofill-details">
+        <summary>
+          <span>&#x2197; Auto-fill from ORCID <span style="font-weight:300;font-size:11px;color:var(--card-border);">&mdash; optional, faster for researchers with a public profile</span></span>
+          <span class="orcid-fold-arrow">&#x276F;</span>
+        </summary>
+        <div class="orcid-autofill-body">
+          <details class="how-it-works" style="margin-bottom:10px;">
+            <summary><span class="fold-arrow">&#x276F;</span> What is ORCID?</summary>
+            <div class="fold-body">Your researcher ID — links to your publication list. Lets us auto-fill your research description and co-authors. <a href="https://orcid.org" target="_blank" style="color:var(--pine);">orcid.org</a> if you need to register.</div>
+          </details>
+          <div class="field-row">
+            <div class="field" style="flex:3"><label>ORCID ID</label><input class="ai-key-input" id="orcid-input" placeholder="0000-0002-xxxx-xxxx or paste ORCID URL" style="border-radius:6px;width:100%;"></div>
+            <div class="field" style="flex:1;display:flex;align-items:flex-end;"><button class="btn-secondary" style="width:100%;" onclick="simulateOrcidV2()">Look up</button></div>
+          </div>
+
+          <!-- ORCID result + auto-filled profile (shown after lookup) -->
+          <div id="orcid-result" style="display:none;margin-top:10px;">
+            <div style="background:var(--pine-wash);border:1px solid var(--pine-border);border-radius:6px;padding:12px 14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <div style="font-size:13px;font-weight:600;color:var(--pine);">Found: Silke S. Dainese</div>
+                  <div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">Aarhus University &middot; 23 papers &middot; 14 co-authors</div>
+                </div>
+                <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--pine);background:rgba(47,79,62,0.15);padding:3px 8px;border-radius:4px;">auto-filled &darr;</span>
+              </div>
+            </div>
+            <div style="margin-top:12px;">
+              <div class="field-row">
+                <div class="field"><label>Your name</label><div class="mock-input filled autofilled">Silke S. Dainese <span class="autofill-tag">ORCID</span></div></div>
+                <div class="field"><label>Institution</label><div class="mock-input filled autofilled">Aarhus University <span class="autofill-tag">ORCID</span></div></div>
+              </div>
+              <div class="section-label">Research description</div>
+              <p class="helper-text">Auto-generated from your 23 publications. Edit freely.</p>
+              <div class="field"><div class="mock-textarea" id="research-desc" contenteditable="true" spellcheck="false" style="min-height:80px;color:var(--ash-black);font-style:normal;">I study stellar rotation and gyrochronology in open clusters, using photometric time-series data from Kepler, K2, and TESS. My focus is on calibrating the rotation&ndash;age relation for FGK dwarfs and understanding how magnetic braking shapes spin-down.</div></div>
+            </div>
+          </div>
+        </div>
       </details>
 
-      <div class="field-row">
-        <div class="field" style="flex:3"><label>ORCID ID</label><input class="ai-key-input" id="orcid-input" placeholder="0000-0002-xxxx-xxxx or paste ORCID URL" style="border-radius:6px;width:100%;"></div>
-        <div class="field" style="flex:1;display:flex;align-items:flex-end;"><button class="btn-secondary" style="width:100%;" onclick="simulateOrcidV2()">Look up</button></div>
-      </div>
-
-      <!-- ORCID result + auto-filled profile -->
-      <div id="orcid-result" style="display:none;">
-        <div style="background:var(--pine-wash);border:1px solid var(--pine-border);border-radius:6px;padding:12px 14px;margin-top:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--pine);">Found: Silke S. Dainese</div>
-              <div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">Aarhus University &middot; 23 papers &middot; 14 co-authors</div>
-            </div>
-            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--pine);background:rgba(47,79,62,0.15);padding:3px 8px;border-radius:4px;">auto-filled &darr;</span>
-          </div>
-        </div>
-
-        <!-- Auto-filled fields (appear after ORCID lookup) -->
-        <div style="margin-top:12px;">
-          <div class="field-row">
-            <div class="field"><label>Your name</label><div class="mock-input filled autofilled">Silke S. Dainese <span class="autofill-tag">ORCID</span></div></div>
-            <div class="field"><label>Institution</label><div class="mock-input filled autofilled">Aarhus University <span class="autofill-tag">ORCID</span></div></div>
-          </div>
-
-          <div class="section-label">Research description</div>
-          <div class="section-desc">Auto-generated from your 23 publications. Edit freely &mdash; the AI reads this daily to score papers.</div>
-          <div class="field"><div class="mock-textarea" id="research-desc" contenteditable="true" spellcheck="false" style="min-height:80px;color:var(--ash-black);font-style:normal;">I study stellar rotation and gyrochronology in open clusters, using photometric time-series data from Kepler, K2, and TESS. My focus is on calibrating the rotation&ndash;age relation for FGK dwarfs and understanding how magnetic braking shapes spin-down.</div></div>
-          <details style="margin-top:6px;">
-            <summary style="font-family:'DM Mono',monospace;font-size:10px;color:var(--warm-grey);cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:4px;">
-              <span style="font-size:9px;">&#x276F;</span> How we use this: your research focus
-            </summary>
-            <div style="font-size:11px;color:var(--warm-grey);padding:6px 0 2px 14px;line-height:1.5;">
-              The AI reads this daily to score every paper. More specific = better results.
-            </div>
-          </details>
-        </div>
-      </div>
-
-      <!-- No-ORCID manual fields (shown when skipping) -->
-      <div id="manual-profile" style="display:none;margin-top:12px;">
-        <div class="field-row">
-          <div class="field"><label>Your name</label><div class="mock-input" id="manual-name" contenteditable="true" spellcheck="false" data-placeholder="Your name...">Your name...</div></div>
-          <div class="field"><label>Institution</label><div class="mock-input" id="manual-institution" contenteditable="true" spellcheck="false" data-placeholder="University / lab...">University / lab...</div></div>
-        </div>
-        <div class="section-label">Research description</div>
-        <div class="section-desc">Describe your research like you'd tell a colleague. More specific = better AI scoring.</div>
-        <div class="field"><div class="mock-textarea" id="research-desc-manual" contenteditable="true" spellcheck="false" data-placeholder="Write your research focus here..." style="min-height:80px;">Write your research focus here...</div></div>
-        <details style="margin-top:6px;">
-          <summary style="font-family:'DM Mono',monospace;font-size:10px;color:var(--warm-grey);cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:4px;">
-            <span style="font-size:9px;">&#x276F;</span> How we use this: your research focus
-          </summary>
-          <div style="font-size:11px;color:var(--warm-grey);padding:6px 0 2px 14px;line-height:1.5;">
-            The AI reads this daily to score every paper. More specific = better results.
-          </div>
-        </details>
-      </div>
-
-      <!-- Advanced profile fields -->
+      <!-- Advanced profile fields: optional customization -->
       <div style="margin-top:12px;">
-        <span class="section-desc" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;" onclick="toggleAdvanced(this,'advanced-profile')">Advanced profile settings &#x2193;</span>
+        <span class="helper-text" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;display:inline-block;" onclick="toggleAdvanced(this,'advanced-profile')">Customize digest identity &#x2193;</span>
         <div id="advanced-profile" style="display:none;margin-top:8px;padding:12px;background:var(--ash-white);border:1px solid var(--card-border);border-radius:6px;">
+          <p class="helper-text" style="margin:0 0 10px;">These fields are optional. Your digest works without them.</p>
           <div class="field-row">
-            <div class="field"><label>Digest name</label><input type="text" class="mock-input filled" id="digest-name-field" value="arXiv Digest" placeholder="arXiv Digest" style="font-style:normal;color:var(--ash-black);"><div class="note">Subject line</div></div>
-            <div class="field"><label>Department</label><input type="text" class="mock-input" id="department-field" placeholder="Department..." style="font-style:italic;color:var(--warm-grey);" onfocus="this.style.fontStyle='normal';this.style.color='var(--ash-black)';" onblur="if(!this.value){this.style.fontStyle='italic';this.style.color='var(--warm-grey)';}"></div>
+            <div class="field">
+              <label>Digest name</label>
+              <input type="text" class="mock-input filled" id="digest-name-field" value="arXiv Digest" placeholder="arXiv Digest" style="font-style:normal;color:var(--ash-black);">
+            </div>
+            <div class="field">
+              <label class="muted">Department <span style="font-weight:300;text-transform:none;letter-spacing:0;font-size:9px;">(optional)</span></label>
+              <input type="text" class="mock-input" id="department-field" placeholder="Department..." style="font-style:italic;color:var(--warm-grey);" onfocus="this.style.fontStyle='normal';this.style.color='var(--ash-black)';" onblur="if(!this.value){this.style.fontStyle='italic';this.style.color='var(--warm-grey)';}">
+            </div>
           </div>
           <div class="section-label" style="margin-top:8px;">Your name on arXiv</div>
-          <div class="section-desc">When you publish, the digest celebrates it!</div>
+          <p class="helper-text">When you publish, the digest celebrates it. Add the format arXiv uses in author lists.</p>
           <div class="chip-group" id="arxiv-name-chips">
             <span class="chip chip-ghost" onclick="addArxivNameVariant()">+ add name variant</span>
           </div>
@@ -407,14 +447,20 @@
             <button class="btn-secondary" style="flex-shrink:0;padding:7px 14px;" onclick="commitArxivName()">Add</button>
             <button class="btn-clear" style="flex-shrink:0;" onclick="hideArxivNameInput()">Cancel</button>
           </div>
-          <div class="field" style="margin-top:10px;"><label>Tagline (optional)</label><input type="text" class="mock-input" id="tagline-field" placeholder="A motto for the email footer..." style="font-style:italic;color:var(--warm-grey);" onfocus="this.style.fontStyle='normal';this.style.color='var(--ash-black)';" onblur="if(!this.value){this.style.fontStyle='italic';this.style.color='var(--warm-grey)';}"><div class="note">e.g. &ldquo;Ad astra per aspera&rdquo;</div></div>
+          <div class="field" style="margin-top:10px;">
+            <label class="muted">Tagline <span style="font-weight:300;text-transform:none;letter-spacing:0;font-size:9px;">(optional)</span></label>
+            <input type="text" class="mock-input" id="tagline-field" placeholder="A motto for the email footer..." style="font-style:italic;color:var(--warm-grey);" onfocus="this.style.fontStyle='normal';this.style.color='var(--ash-black)';" onblur="if(!this.value){this.style.fontStyle='italic';this.style.color='var(--warm-grey)';}">
+            <div class="note">e.g. &ldquo;Ad astra per aspera&rdquo;</div>
+          </div>
         </div>
       </div>
 
+      <!-- Keep skip-orcid-link element in DOM for JS compatibility, hidden -->
+      <span id="skip-orcid-link" style="display:none;"></span>
+      <!-- Keep manual-profile element in DOM for JS compatibility, hidden -->
+      <div id="manual-profile" style="display:none;"></div>
+
       <div style="margin-top:14px;">
-        <span id="skip-orcid-link" style="font-size:12px;color:var(--warm-grey);cursor:pointer;text-decoration:underline;display:inline-block;margin-bottom:10px;" onclick="document.getElementById('manual-profile').style.display='block';this.style.display='none';">Skip auto-fill &mdash; I'll type it myself</span>
-      </div>
-      <div>
         <button class="btn-primary" onclick="done('step-1');go('step-2')">Continue &rarr;</button>
       </div>
     </div>
@@ -424,11 +470,11 @@
   <div class="step collapsed" id="step-2">
     <div class="step-header" onclick="toggleStep('step-2')"><span class="step-num">2</span><span class="step-title">What to Follow</span><span class="step-summary" id="sum-step-2"></span><span class="step-chevron">&#x276F;</span></div>
     <div class="step-body">
-      <p>Which arXiv categories to scan, and which topics to look for.</p>
+      <p class="helper-text" style="margin-top:10px;">Which arXiv categories to scan, and which topics to look for.</p>
 
       <!-- Research description (the most important field — AI reads this daily) -->
       <div class="section-label">Your research focus</div>
-      <div class="section-desc">The AI reads this daily to score every paper. More specific = better results. Mention your methods, targets, instruments, and what makes a paper relevant to you.</div>
+      <p class="helper-text">The AI reads this daily to score every paper. More specific = better results. Mention your methods, targets, instruments, and what makes a paper relevant to you.</p>
       <div class="field" style="margin-bottom:14px;">
         <div class="mock-textarea" id="research-desc-step2" contenteditable="true" spellcheck="false" style="min-height:70px;" data-placeholder="Describe your research like you'd tell a colleague...">Describe your research like you'd tell a colleague...</div>
         <div id="step2-orcid-note" style="display:none;font-size:11px;color:var(--pine);margin-top:4px;">Pre-filled from your ORCID publications &mdash; edit freely.</div>
@@ -443,7 +489,7 @@
 
       <!-- arXiv Categories (rendered dynamically from /api/categories) -->
       <div class="section-label">arXiv categories</div>
-      <div class="section-desc">Which arXiv categories to scan for new papers. Papers by people you follow are always included, even if they publish in a different category.</div>
+      <p class="helper-text">Which arXiv categories to scan for new papers. Papers by people you follow are always included, even if they publish in a different category.</p>
 
       <div id="cat-container">
         <div style="padding:16px;text-align:center;color:var(--warm-grey);font-size:12px;">Loading categories...</div>
@@ -451,7 +497,7 @@
 
       <!-- Keywords as simple chips -->
       <div class="section-label">Keywords</div>
-      <div class="section-desc">Topics your digest looks for. Matching is fuzzy &mdash; &ldquo;planet&rdquo; also finds &ldquo;planetary&rdquo; and &ldquo;exoplanet.&rdquo; Each keyword gets a default weight of 7 (main interest).</div>
+      <p class="helper-text">Topics your digest looks for. Matching is fuzzy &mdash; &ldquo;planet&rdquo; also finds &ldquo;planetary&rdquo; and &ldquo;exoplanet.&rdquo;</p>
 
       <div id="kw-chips-view">
         <div class="chip-group" id="kw-chips">
@@ -461,14 +507,17 @@
           <input type="text" id="kw-input" class="ai-key-input" placeholder="Add a keyword..." style="flex:3;border-radius:6px;" autocomplete="off" onkeydown="if(event.key==='Enter'){addKeyword(this.value);event.preventDefault();}">
           <button class="btn-secondary" style="flex-shrink:0;padding:7px 14px;" onclick="addKeyword(document.getElementById('kw-input').value)">Add</button>
         </div>
-        <div class="note" style="margin-top:6px;">Each keyword starts at weight 7 (main interest). Open Advanced settings below to fine-tune weights from 1&ndash;10.</div>
+        <details class="how-it-works" style="margin-top:8px;">
+          <summary><span class="fold-arrow">&#x276F;</span> How scoring works</summary>
+          <div class="fold-body">Each keyword starts at weight 7 (main interest). Use <em>Advanced keyword settings</em> below to fine-tune from 0&ndash;10, or tick &ldquo;Always&rdquo; to force-include any paper matching that term regardless of score. Higher weight = papers must match this keyword more strongly to rank well.</div>
+        </details>
       </div>
 
       <!-- Advanced keyword settings (hidden by default) -->
       <div style="margin-top:10px;">
-        <span class="section-desc" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;" onclick="toggleAdvanced(this,'advanced-keywords')">Advanced keyword settings &#x2193;</span>
+        <span class="helper-text" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;display:inline-block;" onclick="toggleAdvanced(this,'advanced-keywords')">Advanced keyword settings &#x2193;</span>
         <div id="advanced-keywords" style="display:none;margin-top:8px;padding:12px;background:var(--ash-white);border:1px solid var(--card-border);border-radius:6px;">
-          <div class="section-desc" style="margin:0 0 6px;">Fine-tune weight (0&ndash;10) and set "Always" to force-include regardless of AI score.</div>
+          <p class="helper-text" style="margin:0 0 6px;">Fine-tune weight (0&ndash;10) and set &ldquo;Always&rdquo; to force-include regardless of AI score.</p>
           <table class="kw-table" id="kw-table">
             <thead><tr><th>Keyword</th><th style="width:160px;">Weight</th><th style="width:50px;text-align:center;">Always</th><th style="width:24px;"></th></tr></thead>
             <tbody id="kw-tbody">
@@ -487,7 +536,7 @@
   <div class="step collapsed" id="step-3">
     <div class="step-header" onclick="toggleStep('step-3')"><span class="step-num">3</span><span class="step-title">People to Follow</span><span class="step-summary" id="sum-step-3"></span><span class="step-badge">optional</span><span class="step-chevron">&#x276F;</span></div>
     <div class="step-body">
-      <p>People whose papers you always want to see. Labmates, advisors, collaborators, researchers you follow.</p>
+      <p class="helper-text" style="margin-top:10px;">Everyone you add gets their own section in the digest, even if their latest paper is off-topic for you.</p>
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="chip-group" id="coll-chips" style="flex:1;">
@@ -522,7 +571,7 @@
           <span class="chip chip-gold" style="cursor:pointer;">Curtis, J (4)</span>
           <span class="chip chip-gold" style="cursor:pointer;">Douglas, S (3)</span>
         </div>
-        <div class="section-desc" style="margin-top:8px;cursor:pointer;color:var(--pine);text-decoration:underline;" onclick="var o=this.nextElementSibling.style.display==='none';this.nextElementSibling.style.display=o?'block':'none';this.textContent=o?'Show fewer \u2191':'Show all 14 \u2193'">Show all 14 &#x2193;</div>
+        <div class="helper-text" style="margin-top:8px;cursor:pointer;color:var(--pine);text-decoration:underline;" onclick="var o=this.nextElementSibling.style.display==='none';this.nextElementSibling.style.display=o?'block':'none';this.textContent=o?'Show fewer \u2191':'Show all 14 \u2193'">Show all 14 &#x2193;</div>
         <div style="display:none;">
           <div class="chip-group" style="margin-top:4px;">
             <span class="chip chip-gold" style="cursor:pointer;">Ag&uuml;eros, M (3)</span>
@@ -534,10 +583,6 @@
         <div style="margin-top:6px;"><button class="btn-clear" onclick="document.getElementById('ai-people-results').style.display='none'">Hide suggestions</button></div>
       </div>
 
-      <div class="explainer" style="margin-top:12px;">
-        Everyone you add gets their own section in the digest, even if their papers are off-topic for you. For advanced author scoring options, see the comments in your downloaded config.yaml.
-      </div>
-
       <button class="btn-primary" onclick="done('step-3');go('step-4')" style="margin-top:14px;">Continue &rarr;</button>
     </div>
   </div>
@@ -546,7 +591,7 @@
   <div class="step collapsed" id="step-4">
     <div class="step-header" onclick="toggleStep('step-4')"><span class="step-num">4</span><span class="step-title">Delivery &amp; Download</span><span class="step-summary" id="sum-step-4"></span><span class="step-chevron">&#x276F;</span></div>
     <div class="step-body">
-      <p>How your digest is delivered. Smart defaults &mdash; most people just download here.</p>
+      <p class="helper-text" style="margin-top:10px;">How your digest is delivered. Smart defaults &mdash; most people just download here.</p>
 
       <!-- Frequency as editable text -->
       <div class="section-label">Schedule</div>
@@ -571,9 +616,9 @@
 
       <!-- Customize card layout (collapsed) -->
       <div style="margin-top:14px;">
-        <span class="section-desc" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;" onclick="toggleAdvanced(this,'card-customize')">Customize card layout &#x2193;</span>
+        <span class="helper-text" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;display:inline-block;" onclick="toggleAdvanced(this,'card-customize')">Customize card layout &#x2193;</span>
         <div id="card-customize" style="display:none;margin-top:8px;padding:12px;background:var(--ash-white);border:1px solid var(--card-border);border-radius:6px;">
-          <div class="section-desc" style="margin:0 0 8px;">How each paper looks in the email. Default includes summary, why chosen, score, and tags.</div>
+          <p class="helper-text" style="margin:0 0 8px;">How each paper looks in the email. Default includes summary, why chosen, score, and tags.</p>
           <div class="radio-group" style="margin-bottom:10px;">
             <div class="radio-option active" onclick="setPreset(this,'default')"><div class="radio-title">Default</div><div class="radio-desc">Summary, why, score, tags.</div></div>
             <div class="radio-option" onclick="setPreset(this,'minimal')"><div class="radio-title">Minimal</div><div class="radio-desc">Title + one-line.</div></div>
@@ -582,7 +627,7 @@
           </div>
 
           <div id="card-custom-controls" style="display:none;">
-          <div class="section-desc" style="margin:8px 0 4px;">Toggle &amp; reorder card elements:</div>
+          <p class="helper-text" style="margin:8px 0 4px;">Toggle &amp; reorder card elements:</p>
           <div class="card-order-item" style="margin-bottom:4px;">
             <span class="order-toggle" id="score-toggle" onclick="toggleScoreBadge()">&#x2713;</span>
             <span class="order-label">Score badge</span>
@@ -625,9 +670,9 @@
 
       <!-- Self-hosting options (collapsed) -->
       <div style="margin-top:8px;">
-        <span class="section-desc" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;" onclick="toggleAdvanced(this,'selfhost-options')">Delivery settings (email, send time, score threshold) &#x2193;</span>
+        <span class="helper-text" style="cursor:pointer;color:var(--pine);text-decoration:underline;margin:0;display:inline-block;" onclick="toggleAdvanced(this,'selfhost-options')">Delivery settings (email, send time, score threshold) &#x2193;</span>
         <div id="selfhost-options" style="display:none;margin-top:8px;padding:12px;background:var(--ash-white);border:1px solid var(--card-border);border-radius:6px;">
-          <div class="section-desc" style="margin:0 0 8px;">Only needed if you're sending digests from your own email account, without a relay token.</div>
+          <p class="helper-text" style="margin:0 0 8px;">Only needed if you're sending digests from your own email account, without a relay token.</p>
           <div class="field-row">
             <div class="field"><label>Email provider</label>
               <div class="radio-group" style="margin:4px 0 0;"><div class="radio-option active" onclick="setRadio(this)" style="padding:8px;"><div style="font-weight:600;font-size:12px;">Gmail</div></div><div class="radio-option" onclick="setRadio(this)" style="padding:8px;"><div style="font-weight:600;font-size:12px;">Outlook</div></div></div>
@@ -679,11 +724,9 @@
     <div style="flex:1;">
       <div style="font-size:13px;font-weight:600;">Add secrets</div>
       <div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">In your fork: <strong>Settings tab</strong> &rarr; Secrets and variables &rarr; Actions &rarr; New repository secret</div>
-      <details style="margin-top:6px;">
-        <summary style="font-family:'DM Mono',monospace;font-size:10px;color:var(--warm-grey);cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:4px;">
-          <span style="font-size:9px;">&#x276F;</span> What's a GitHub secret?
-        </summary>
-        <div style="font-size:12px;color:var(--warm-grey);padding:6px 0 2px 14px;line-height:1.5;">
+      <details class="how-it-works" style="margin-top:6px;">
+        <summary><span class="fold-arrow">&#x276F;</span> What's a GitHub secret?</summary>
+        <div class="fold-body">
           A GitHub secret is a private setting stored in your repository — like a password vault built into GitHub. Your automated digest can read it when it runs, but it's never visible in your code or to anyone else. This is where you store your email credentials and API keys safely.
         </div>
       </details>
@@ -770,10 +813,10 @@
     <div class="step-header" onclick="toggleStep('mini-1')"><span class="step-num">1</span><span class="step-title">Keywords &amp; Interests</span><span class="step-summary" id="sum-mini-1"></span><span class="step-chevron">&#x276F;</span></div>
     <div class="step-body">
       <div style="background:var(--pine-wash);border:1px solid var(--pine-border);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--pine);">Already set up? <span style="text-decoration:underline;cursor:pointer;" onclick="openUpload()">Upload your config.yaml to edit your settings.</span></div>
-      <p>What topics should your digest cover? Add keywords and set how important each one is.</p>
+      <p class="helper-text">What topics should your digest cover? Add keywords and set how important each one is.</p>
 
       <div class="section-label">Your keywords</div>
-      <div class="section-desc">Add any terms you're interested in. Score from 0 (slight interest) to 10 (main interest). Check "Always" to never miss papers on that topic.</div>
+      <p class="helper-text">Add any terms you're interested in. Score from 0 (slight interest) to 10 (main interest). Check &ldquo;Always&rdquo; to never miss papers on that topic.</p>
       <table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;" id="mini-kw-table">
         <thead><tr style="border-bottom:2px solid var(--card-border);">
           <th style="text-align:left;padding:6px 8px;font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--warm-grey);">Keyword</th>
@@ -796,7 +839,7 @@
   <div class="step collapsed" id="mini-2">
     <div class="step-header" onclick="toggleStep('mini-2')"><span class="step-num">2</span><span class="step-title">Colleagues</span><span class="step-summary" id="sum-mini-2"></span><span class="step-badge">optional</span><span class="step-chevron">&#x276F;</span></div>
     <div class="step-body">
-      <p>People whose papers you always want to see, regardless of topic. Labmates, advisors, collaborators.</p>
+      <p class="helper-text" style="margin-top:10px;">People whose papers you always want to see, regardless of topic. Labmates, advisors, collaborators.</p>
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="chip-group" id="mini-coll-chips" style="flex:1;">
@@ -822,17 +865,17 @@
   <div class="step collapsed" id="mini-3">
     <div class="step-header" onclick="toggleStep('mini-3')"><span class="step-num">3</span><span class="step-title">Schedule &amp; Download</span><span class="step-summary" id="sum-mini-3"></span><span class="step-chevron">&#x276F;</span></div>
     <div class="step-body">
-      <p>How many papers and how often.</p>
+      <p class="helper-text" style="margin-top:10px;">How many papers and how often.</p>
 
       <div class="section-label">Digest size</div>
-      <div class="section-desc">Controls the volume of each email.</div>
+      <p class="helper-text">Controls the volume of each email.</p>
       <div class="radio-group">
         <div class="radio-option active" onclick="setRadio(this)"><div class="radio-title">Highlights</div><div class="radio-desc">Top papers only (up to 6). For busy people.</div></div>
         <div class="radio-option" onclick="setRadio(this)"><div class="radio-title">In-depth</div><div class="radio-desc">Wider net (up to 15). For browsers who want more coverage.</div></div>
       </div>
 
       <div class="section-label">How often?</div>
-      <div class="section-desc">More frequent = smaller digests.</div>
+      <p class="helper-text">More frequent = smaller digests.</p>
       <div class="radio-group">
         <div class="radio-option active" onclick="setRadio(this)"><div class="radio-title">Mon / Wed / Fri</div><div class="radio-desc">Best balance.</div></div>
         <div class="radio-option" onclick="setRadio(this)"><div class="radio-title">Every weekday</div><div class="radio-desc">Never miss a day.</div></div>
@@ -874,11 +917,9 @@
       <div>
         <div style="font-size:13px;font-weight:600;">Add secrets</div>
         <div style="font-size:12px;color:var(--warm-grey);margin-top:2px;">In your fork: <strong>Settings tab</strong> &rarr; Secrets and variables &rarr; Actions &rarr; New repository secret</div>
-        <details style="margin-top:6px;">
-          <summary style="font-family:'DM Mono',monospace;font-size:10px;color:var(--warm-grey);cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:4px;">
-            <span style="font-size:9px;">&#x276F;</span> What's a GitHub secret?
-          </summary>
-          <div style="font-size:12px;color:var(--warm-grey);padding:6px 0 2px 14px;line-height:1.5;">
+        <details class="how-it-works" style="margin-top:6px;">
+          <summary><span class="fold-arrow">&#x276F;</span> What's a GitHub secret?</summary>
+          <div class="fold-body">
             A GitHub secret is a private setting stored in your repository — like a password vault built into GitHub. Your automated digest can read it when it runs, but it's never visible in your code or to anyone else. Add at least: <code style="font-family:'DM Mono',monospace;">RECIPIENT_EMAIL</code> (where to send), and either <code style="font-family:'DM Mono',monospace;">DIGEST_RELAY_TOKEN</code> (from your access code) or <code style="font-family:'DM Mono',monospace;">SMTP_USER</code> + <code style="font-family:'DM Mono',monospace;">SMTP_PASSWORD</code> (your email credentials).
           </div>
         </details>
@@ -1313,7 +1354,7 @@ async function simulateOrcidV2(){
     if(autofillDesc) autofillDesc.textContent = `Suggests categories and keywords from your ${data.paper_count} papers.`;
 
     // Fill paper count in autofill description
-    const descMeta = document.querySelector('#orcid-result .section-desc');
+    const descMeta = document.querySelector('#orcid-result .helper-text');
     if(descMeta) descMeta.textContent = `Auto-generated from your ${data.paper_count} publications. Edit freely \u2014 the AI reads this daily to score papers.`;
 
     // Fill arXiv name variants

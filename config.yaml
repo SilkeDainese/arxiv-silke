@@ -1,0 +1,208 @@
+# ─────────────────────────────────────────────────────────────
+#  Science News for Silke — Configuration
+#  Edit this file to update your interests. Changes take effect
+#  on the next scheduled run (Mon/Wed/Fri 9am Danish time).
+# ─────────────────────────────────────────────────────────────
+
+# ── Your Profile ───────────────────────────────
+digest_name: "Science News for Silke"
+researcher_name: "Silke S. Dainese"
+recipient_email: "dainese@phys.au.dk"
+
+research_context: |
+  I study stellar rotation using Gaia DR3 vbroad measurements as a
+  proxy for projected rotational velocity (vsini). My main project
+  characterises the Kraft break — the temperature boundary where
+  magnetic braking switches off — in single-star field dwarfs using
+  hierarchical Bayesian modelling. I also work on spin-orbit obliquity
+  in exoplanet systems, connecting host star rotation to planetary
+  orbital architecture. I care about hot Jupiters, sub-Neptunes,
+  planet migration, and tidal interactions. My data comes primarily
+  from Gaia, with spectroscopic follow-up from Keck and other
+  ground-based facilities.
+
+# ── Your name on arXiv (for celebration section) ──
+self_match:
+  - "Dainese, S"
+  - "Dainese, Silke"
+  - "Dainese, Silke S"
+  - "Dainese, Silke Sofia"
+  - "S. Dainese"
+  - "Silke S. Dainese"
+  - "Silke Sofia Dainese"
+
+categories:
+  - astro-ph.SR
+  - astro-ph.EP
+  - astro-ph.GA
+  - cond-mat.mtrl-sci   # Alfred's 2D materials papers
+
+# ── Keywords (word: weight 1-10) ────────────────
+keywords:
+  # Core research
+  Kraft break: 10
+  stellar rotation: 9
+  vbroad: 10
+  vsini: 9
+  v sin i: 9
+  magnetic braking: 9
+  angular momentum evolution: 8
+  convective envelope: 7
+  stellar spin-down: 8
+
+  # Gaia
+  Gaia DR3: 8
+  Gaia DR4: 9
+  Gaia astrometry: 6
+  GSP-Phot: 6
+  GSP-Spec: 6
+
+  # Spin-orbit & obliquity
+  spin-orbit alignment: 9
+  stellar obliquity: 9
+  obliquity: 7
+  Rossiter-McLaughlin: 8
+  Doppler tomography: 7
+  tidal realignment: 7
+
+  # Exoplanets
+  hot Jupiter: 7
+  sub-Neptune: 7
+  exoplanet host star: 7
+  planet migration: 7
+  high-eccentricity migration: 7
+  tidal dissipation: 6
+  radius valley: 6
+  water world: 6
+  WASP: 5
+
+  # Methods
+  hierarchical Bayesian: 7
+  HBM: 6
+  MCMC: 5
+  simulation-based inference: 6
+  selection function: 5
+
+  # Instruments & surveys
+  Keck spectroscopy: 6
+  LAMOST: 5
+  macroturbulence: 6
+
+  # Rotation-adjacent
+  rotation period: 7
+  rotation velocity: 7
+  Rossby number: 6
+  stellar activity: 6
+  projected rotational velocity: 8
+
+keyword_aliases:
+  vsini:
+    - v sin i
+    - projected rotational velocity
+  Kraft break:
+    - Kraft transition
+  hierarchical Bayesian:
+    - hierarchical Bayesian model
+    - HBM
+
+# ── Research Authors ───────────────────────────
+research_authors:
+  - Simon Albrecht
+  - Albrecht, S
+  - Triaud
+  - Reinhold
+  - Luque
+
+# ── Colleagues ─────────────────────────────────
+colleagues:
+  people:
+    # ── Aarhus University ──
+    - name: Simon Albrecht
+      match: ["Albrecht, S", "Albrecht, Simon"]
+      note: "Supervisor"
+    - name: Emil Knudstrup
+      match: ["Knudstrup"]
+    - name: Kamil Kalinowski
+      match: ["Kalinowski"]
+    - name: Marcus Marcussen
+      match: ["Marcussen"]
+    - name: Mia Lundkvist
+      match: ["Lundkvist"]
+    - name: Jens Larsen
+      match: ["Larsen, J", "Jens Larsen"]
+    - name: Frank Grundahl
+      match: ["Grundahl"]
+    - name: Earl Bellinger
+      match: ["Bellinger"]
+
+    # ── Close ──
+    - name: Alfred Jones
+      match: ["Alfred Jones", "Jones, Alfred", "Alfred J. H. Jones", "Jones, A. J. H", "Alfred J H Jones"]
+      note: "Partner — 2D materials"
+    - name: Søren Ulstrup
+      match: ["Ulstrup"]
+      note: "Alfred's group — 2D materials"
+
+    # ── MPIA Heidelberg ──
+    - name: Angelique Kahle
+      match: ["Kahle"]
+      note: "MPIA — sub-Neptunes, WASP-121b"
+    - name: Antonia
+      match: ["Antonia"]
+      note: "MPIA — retrievals"
+    - name: Cinta Vidante
+      match: ["Vidante", "Cividante"]
+      note: "MPIA — Exocoffee host"
+    - name: Coryn Bailer-Jones
+      match: ["Bailer-Jones"]
+      note: "MPIA — Gaia"
+    - name: David Haegele
+      match: ["Haegele"]
+      note: "MPIA — Doppler imaging"
+    - name: David Trevascus
+      match: ["Trevascus"]
+      note: "MPIA — HR 8799, PDS 70"
+    - name: Duncan Christie
+      match: ["Christie, D", "Duncan Christie"]
+      note: "MPIA — atmosphere clouds"
+    - name: Elisa Haas
+      match: ["Haas, E", "Elisa Haas"]
+      note: "MPIA — Gaia"
+    - name: Evie Ahrer
+      match: ["Ahrer"]
+      note: "MPIA — sub-Neptunes, retrievals"
+    - name: Lorena Acuna
+      match: ["Acuna", "Acuña"]
+      note: "MPIA — interior modelling"
+    - name: Sophia Vaughan
+      match: ["Vaughan, S", "Sophia Vaughan"]
+      note: "MPIA — observations"
+
+    # ── Other ──
+    - name: Trifon Trifonov
+      match: ["Trifonov"]
+      note: "Gaia DR4 astrometry"
+
+  institutions:
+    - Aarhus University
+
+# ── Digest Mode ────────────────────────────────
+digest_mode: "in_depth"
+recipient_view_mode: "deep_read"
+
+# ── Settings ───────────────────────────────────
+days_back: 4
+schedule: "mon_wed_fri"
+send_hour_utc: 7
+
+# ── Personalization ────────────────────────────
+institution: "Aarhus University"
+department: "Dept. of Physics & Astronomy"
+tagline: ""
+
+# ── Email Settings ─────────────────────────────
+smtp_server: "smtp.gmail.com"
+smtp_port: 587
+
+# ── Your Repository ────────────────────────────
+github_repo: "SilkeDainese/arxiv-digest"

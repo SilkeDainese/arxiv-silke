@@ -182,6 +182,11 @@ def annotate_student_packages(papers: list[dict[str, Any]]) -> None:
                 or matched_keywords.intersection(track_keywords[track_id])
             ):
                 matched_packages.append(track_id)
+        # Category matches are more specific than keyword-only matches. Sort so
+        # that the package whose arXiv category covers this paper comes first,
+        # ensuring the display badge reflects the paper's actual field.
+        paper_cat = paper.get("category", "")
+        matched_packages.sort(key=lambda tid: 0 if paper_cat in track_categories[tid] else 1)
         paper["student_package_ids"] = matched_packages
         paper["student_au_priority"] = int(
             bool(paper.get("colleague_matches"))

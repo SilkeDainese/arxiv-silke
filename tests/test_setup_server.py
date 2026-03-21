@@ -24,6 +24,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "setup"))
 import server  # noqa: E402 — must come after sys.path insert
 
 
+# Register a crash-on-demand route before any request touches the app.
+# The view function body is controlled by a mutable dict so each test can
+# choose whether to raise or not without re-registering the route.
+_crash_route_behaviour: dict = {"raise": False}
+
+
+@server.app.route("/test-crash-route")
+def _crash_view():
+    if _crash_route_behaviour["raise"]:
+        raise RuntimeError("deliberate test crash")
+    from flask import jsonify
+    return jsonify({"ok": True})
+
+
 @pytest.fixture
 def client():
     server.app.config["TESTING"] = True
@@ -408,3 +422,63 @@ class TestStudentsRegister:
             )
         assert resp.status_code == 404
         assert "Student not found" in resp.get_json()["error"]
+
+
+# ─────────────────────────────────────────────────────────────
+#  /api/orcid/lookup — timeout paths
+# ─────────────────────────────────────────────────────────────
+
+
+class TestOrcidLookupTimeouts:
+    def test_orcid_lookup_person_timeout(self, client, monkeypatch):
+        """fetch_orcid_person raising TimeoutError → 503 with friendly 'try again' message."""
+        monkeypatch.setattr(server, "_PURE_AVAILABLE", True)
+
+        def raise_timeout(orcid_id):
+            raise TimeoutError("timed out")
+
+        monkeypatch.setattr(server, "fetch_orcid_person", raise_timeout)
+        resp = client.post("/api/orcid/lookup", json={"orcid_id": "0000-0001-2345-6789"})
+        assert resp.status_code == 503
+        assert "try again" in resp.get_json()["error"].lower()
+
+    def test_orcid_lookup_works_timeout(self, client, monkeypatch):
+        """fetch_orcid_works raising OSError → 503 with friendly 'try again' message."""
+        monkeypatch.setattr(server, "_PURE_AVAILABLE", True)
+
+        def fake_person(orcid_id):
+            return "Test User", "AU", None
+
+        def raise_oserror(orcid_id):
+            raise OSError("connection reset")
+
+        monkeypatch.setattr(server, "fetch_orcid_person", fake_person)
+        monkeypatch.setattr(server, "fetch_orcid_works", raise_oserror)
+        resp = client.post("/api/orcid/lookup", json={"orcid_id": "0000-0001-2345-6789"})
+        assert resp.status_code == 503
+        assert "try again" in resp.get_json()["error"].lower()
+
+
+# ─────────────────────────────────────────────────────────────
+#  Error handlers
+# ─────────────────────────────────────────────────────────────
+
+
+class TestErrorHandlers:
+    def test_404_error_page(self, client):
+        """Nonexistent route returns 404 with HTML containing 'not found'."""
+        resp = client.get("/this/route/does/not/exist")
+        assert resp.status_code == 404
+        assert b"not found" in resp.data.lower()
+
+    def test_500_error_page(self, client):
+        """Unhandled exception in a route returns 500 with HTML containing 'went wrong'."""
+        _crash_route_behaviour["raise"] = True
+        server.app.config["TESTING"] = False
+        try:
+            resp = client.get("/test-crash-route")
+            assert resp.status_code == 500
+            assert b"went wrong" in resp.data.lower()
+        finally:
+            _crash_route_behaviour["raise"] = False
+            server.app.config["TESTING"] = True

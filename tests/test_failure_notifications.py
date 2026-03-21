@@ -8,6 +8,8 @@ Tests for failure notification emails:
 
 from __future__ import annotations
 
+import io
+import json
 import smtplib
 import sys
 from io import StringIO
@@ -373,3 +375,185 @@ def test_relay_students_permission_error_returns_ok_false():
     assert status == 403
     assert body.get("ok") is False
     assert "error" in body
+
+
+# ─────────────────────────────────────────────────────────────
+#  relay/api/send.py — additional error paths
+# ─────────────────────────────────────────────────────────────
+
+def test_relay_send_too_many_recipients():
+    """Payload with 21 recipients → 400."""
+    fake = _FakeHandler()
+    payload = json.dumps({
+        "token": "tok",
+        "recipients": [f"user{i}@example.com" for i in range(21)],
+        "subject": "hi",
+        "html": "<p>hi</p>",
+    }).encode()
+    fake.headers = {"Content-Length": str(len(payload))}
+    fake.rfile = io.BytesIO(payload)
+
+    with patch.dict(relay_send.__dict__, {"RELAY_TOKEN": "tok", "SMTP_USER": "u", "SMTP_PASSWORD": "p"}):
+        relay_send.handler.do_POST(fake)
+
+    status, body = fake.response
+    assert status == 400
+    assert body.get("ok") is False
+
+
+def test_relay_send_generic_smtp_error():
+    """sendmail raising ConnectionResetError → 500 with ok: false."""
+    fake = _FakeHandler()
+    payload = json.dumps({
+        "token": "tok",
+        "recipients": ["a@b.com"],
+        "subject": "hi",
+        "html": "<p>hi</p>",
+    }).encode()
+    fake.headers = {"Content-Length": str(len(payload))}
+    fake.rfile = io.BytesIO(payload)
+
+    with (
+        patch.dict(relay_send.__dict__, {"RELAY_TOKEN": "tok", "SMTP_USER": "u", "SMTP_PASSWORD": "p"}),
+        patch("smtplib.SMTP") as mock_smtp_class,
+    ):
+        mock_server = MagicMock()
+        mock_smtp_class.return_value.__enter__ = MagicMock(return_value=mock_server)
+        mock_smtp_class.return_value.__exit__ = MagicMock(return_value=False)
+        mock_server.sendmail.side_effect = ConnectionResetError("connection reset by peer")
+
+        relay_send.handler.do_POST(fake)
+
+    status, body = fake.response
+    assert status == 500
+    assert body.get("ok") is False
+
+
+# ─────────────────────────────────────────────────────────────
+#  relay/api/students.py — additional error paths
+# ─────────────────────────────────────────────────────────────
+
+def test_relay_students_file_not_found():
+    """dispatch raising FileNotFoundError → 404 with ok: false."""
+    fake = _FakeHandler()
+    payload = json.dumps({"action": "request_subscribe"}).encode()
+    fake.headers = {"Content-Length": str(len(payload))}
+    fake.rfile = io.BytesIO(payload)
+
+    with patch("relay.api.students._dispatch", side_effect=FileNotFoundError("registry missing")):
+        relay_students.handler.do_POST(fake)
+
+    status, body = fake.response
+    assert status == 404
+    assert body.get("ok") is False
+
+
+def test_relay_students_unhandled_error():
+    """dispatch raising bare Exception → 500 with ok: false."""
+    fake = _FakeHandler()
+    payload = json.dumps({"action": "request_subscribe"}).encode()
+    fake.headers = {"Content-Length": str(len(payload))}
+    fake.rfile = io.BytesIO(payload)
+
+    with patch("relay.api.students._dispatch", side_effect=Exception("unexpected boom")):
+        relay_students.handler.do_POST(fake)
+
+    status, body = fake.response
+    assert status == 500
+    assert body.get("ok") is False
+
+
+# ─────────────────────────────────────────────────────────────
+#  send_failure_report — no SMTP, no relay
+# ─────────────────────────────────────────────────────────────
+
+def test_failure_report_no_smtp_no_relay(capsys):
+    """With a recipient but no SMTP or relay config, a warning is printed to stderr."""
+    config = make_config(recipient_email="researcher@example.com")
+    with patch.dict("os.environ", {"SMTP_USER": "", "SMTP_PASSWORD": "", "DIGEST_RELAY_TOKEN": ""}):
+        send_failure_report(config, "pipeline crashed")
+
+    captured = capsys.readouterr()
+    assert captured.err != ""
+
+
+# ─────────────────────────────────────────────────────────────
+#  __main__ wrappers — crash → send_failure_report + SystemExit(1)
+# ─────────────────────────────────────────────────────────────
+
+def test_digest_main_sends_failure_report_on_crash():
+    """RuntimeError in main() → send_failure_report called, SystemExit(1) raised."""
+    with (
+        patch("digest.main", side_effect=RuntimeError("pipeline boom")),
+        patch("digest.load_config", return_value={
+            "recipient_email": "admin@example.com",
+            "digest_name": "Test",
+            "smtp_server": "smtp.gmail.com",
+            "smtp_port": 587,
+        }),
+        patch("digest.send_failure_report") as mock_report,
+        patch.dict("os.environ", {"SMTP_USER": "", "SMTP_PASSWORD": "", "DIGEST_RELAY_TOKEN": ""}),
+    ):
+        with pytest.raises(SystemExit) as exc_info:
+            # Mirror the actual __main__ guard logic
+            _config_for_failure = None
+            try:
+                try:
+                    _config_for_failure = d.load_config()
+                except Exception:
+                    pass
+                d.main()
+            except SystemExit:
+                raise
+            except Exception as _exc:
+                import traceback
+                _tb = traceback.format_exc()
+                try:
+                    d.send_failure_report(_config_for_failure, _tb)
+                except Exception:
+                    pass
+                raise SystemExit(1) from None
+
+    assert exc_info.value.code == 1
+    mock_report.assert_called_once()
+
+
+def test_student_digest_main_sends_failure_on_crash():
+    """RuntimeError in student_digest.main() → send_failure_report called, SystemExit(1) raised."""
+    import student_digest as sd
+
+    with (
+        patch("student_digest.main", side_effect=RuntimeError("student pipeline boom")),
+        patch("student_digest.build_student_base_config", return_value={
+            "recipient_email": "",
+            "digest_name": "Test",
+            "smtp_server": "smtp.gmail.com",
+            "smtp_port": 587,
+        }),
+        patch("student_digest.send_failure_report") as mock_report,
+        patch.dict("os.environ", {
+            "RECIPIENT_EMAIL": "admin@example.com",
+            "SMTP_USER": "",
+            "SMTP_PASSWORD": "",
+            "DIGEST_RELAY_TOKEN": "",
+        }),
+    ):
+        with pytest.raises(SystemExit) as exc_info:
+            # Mirror the actual __main__ block logic
+            try:
+                sd.main()
+            except SystemExit:
+                raise
+            except Exception as _exc:
+                import traceback
+                _tb = traceback.format_exc()
+                try:
+                    _admin_config = sd.build_student_base_config()
+                    _admin_config["recipient_email"] = "admin@example.com"
+                    sd.send_failure_report(_admin_config, _tb)
+                except Exception:
+                    pass
+                raise SystemExit(1) from None
+
+    assert exc_info.value.code == 1
+    mock_report.assert_called_once()

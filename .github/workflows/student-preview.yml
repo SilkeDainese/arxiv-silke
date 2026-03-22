@@ -32,4 +32,5 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           STUDENT_ADMIN_TOKEN: ${{ secrets.STUDENT_ADMIN_TOKEN }}
+          STUDENT_TOKEN_SECRET: ${{ secrets.STUDENT_TOKEN_SECRET }}
         run: python student_digest.py --send-preview

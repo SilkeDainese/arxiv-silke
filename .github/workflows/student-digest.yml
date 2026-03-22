@@ -52,6 +52,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           STUDENT_ADMIN_TOKEN: ${{ secrets.STUDENT_ADMIN_TOKEN }}
+          STUDENT_TOKEN_SECRET: ${{ secrets.STUDENT_TOKEN_SECRET }}
           STUDENT_MANAGE_URL: ${{ vars.STUDENT_MANAGE_URL }}
           STUDENT_REGISTRY_URL: ${{ vars.STUDENT_REGISTRY_URL }}
           WORKFLOW_DISPATCH_PREVIEW: ${{ inputs.preview }}

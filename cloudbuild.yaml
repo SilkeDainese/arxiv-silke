@@ -1,0 +1,16 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'europe-west1-docker.pkg.dev/silke-hub/arxiv-digest/app:$COMMIT_SHA', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'europe-west1-docker.pkg.dev/silke-hub/arxiv-digest/app:$COMMIT_SHA']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - arxiv-digest
+      - --image=europe-west1-docker.pkg.dev/silke-hub/arxiv-digest/app:$COMMIT_SHA
+      - --region=europe-west1
+      - --platform=managed
+options:
+  logging: CLOUD_LOGGING_ONLY

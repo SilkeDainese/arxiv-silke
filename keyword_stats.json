@@ -17,62 +17,62 @@
   "vbroad": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "vsini": {
     "total_hits": 3,
     "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "v sin i": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "Gaia DR4": {
     "total_hits": 2,
     "last_hit": "2026-03-14",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "Gaia DR3": {
-    "total_hits": 18,
-    "last_hit": "2026-03-14",
-    "runs_checked": 8
+    "total_hits": 20,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "LAMOST": {
     "total_hits": 9,
     "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "macroturbulence": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "Kraft break": {
     "total_hits": 1,
     "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "stellar rotation": {
-    "total_hits": 11,
-    "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "total_hits": 12,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "rotation velocity": {
-    "total_hits": 8,
-    "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "total_hits": 10,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "rotation period": {
     "total_hits": 11,
     "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "magnetic braking": {
     "total_hits": 1,
     "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "gyrochronology": {
     "total_hits": 0,
@@ -82,22 +82,22 @@
   "stellar spin-down": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "angular momentum evolution": {
     "total_hits": 1,
     "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "Rossby number": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "projected rotational velocity": {
     "total_hits": 3,
     "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "asteroseismic rotation": {
     "total_hits": 0,
@@ -107,32 +107,32 @@
   "spin-orbit alignment": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "stellar obliquity": {
-    "total_hits": 1,
-    "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "total_hits": 3,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "obliquity": {
-    "total_hits": 4,
-    "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "total_hits": 6,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "Rossiter-McLaughlin": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "Doppler tomography": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "tidal realignment": {
     "total_hits": 1,
     "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "binary star": {
     "total_hits": 0,
@@ -165,9 +165,9 @@
     "runs_checked": 3
   },
   "radius valley": {
-    "total_hits": 0,
-    "last_hit": null,
-    "runs_checked": 8
+    "total_hits": 1,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "mass-radius relation": {
     "total_hits": 0,
@@ -177,12 +177,12 @@
   "sub-Neptune": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 9
+    "runs_checked": 10
   },
   "water world": {
-    "total_hits": 2,
-    "last_hit": "2026-03-14",
-    "runs_checked": 8
+    "total_hits": 3,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "planet interior": {
     "total_hits": 0,
@@ -195,14 +195,14 @@
     "runs_checked": 3
   },
   "high-eccentricity migration": {
-    "total_hits": 0,
-    "last_hit": null,
-    "runs_checked": 8
+    "total_hits": 1,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "tidal dissipation": {
-    "total_hits": 2,
-    "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "total_hits": 3,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "Kozai-Lidov": {
     "total_hits": 0,
@@ -217,17 +217,17 @@
   "hierarchical Bayesian": {
     "total_hits": 6,
     "last_hit": "2026-03-14",
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "simulation-based inference": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 8
+    "runs_checked": 9
   },
   "selection function": {
-    "total_hits": 7,
-    "last_hit": "2026-03-22",
-    "runs_checked": 8
+    "total_hits": 10,
+    "last_hit": "2026-03-25",
+    "runs_checked": 9
   },
   "transmission spectroscopy": {
     "total_hits": 0,
@@ -255,63 +255,113 @@
     "runs_checked": 1
   },
   "convective envelope": {
-    "total_hits": 0,
-    "last_hit": null,
-    "runs_checked": 5
+    "total_hits": 1,
+    "last_hit": "2026-03-25",
+    "runs_checked": 6
   },
   "Gaia astrometry": {
-    "total_hits": 6,
-    "last_hit": "2026-03-14",
-    "runs_checked": 5
+    "total_hits": 9,
+    "last_hit": "2026-03-25",
+    "runs_checked": 6
   },
   "GSP-Phot": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 5
+    "runs_checked": 6
   },
   "GSP-Spec": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 5
+    "runs_checked": 6
   },
   "hot Jupiter": {
-    "total_hits": 2,
-    "last_hit": "2026-03-22",
-    "runs_checked": 5
+    "total_hits": 5,
+    "last_hit": "2026-03-25",
+    "runs_checked": 6
   },
   "exoplanet host star": {
     "total_hits": 4,
     "last_hit": "2026-03-22",
-    "runs_checked": 5
+    "runs_checked": 6
   },
   "planet migration": {
-    "total_hits": 3,
-    "last_hit": "2026-03-22",
-    "runs_checked": 5
+    "total_hits": 4,
+    "last_hit": "2026-03-25",
+    "runs_checked": 6
   },
   "WASP": {
-    "total_hits": 2,
-    "last_hit": "2026-03-14",
-    "runs_checked": 5
+    "total_hits": 3,
+    "last_hit": "2026-03-25",
+    "runs_checked": 6
   },
   "HBM": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 5
+    "runs_checked": 6
   },
   "MCMC": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 5
+    "runs_checked": 6
   },
   "Keck spectroscopy": {
     "total_hits": 0,
     "last_hit": null,
-    "runs_checked": 5
+    "runs_checked": 6
   },
   "stellar activity": {
-    "total_hits": 11,
-    "last_hit": "2026-03-22",
-    "runs_checked": 5
+    "total_hits": 15,
+    "last_hit": "2026-03-25",
+    "runs_checked": 6
+  },
+  "KPF": {
+    "total_hits": 0,
+    "last_hit": null,
+    "runs_checked": 1
+  },
+  "Keck Planet Finder": {
+    "total_hits": 0,
+    "last_hit": null,
+    "runs_checked": 1
+  },
+  "BANANA": {
+    "total_hits": 0,
+    "last_hit": null,
+    "runs_checked": 1
+  },
+  "von Mises-Fisher": {
+    "total_hits": 0,
+    "last_hit": null,
+    "runs_checked": 1
+  },
+  "vMF distribution": {
+    "total_hits": 0,
+    "last_hit": null,
+    "runs_checked": 1
+  },
+  "astrometric binary": {
+    "total_hits": 0,
+    "last_hit": null,
+    "runs_checked": 1
+  },
+  "astrometric orbit": {
+    "total_hits": 1,
+    "last_hit": "2026-03-25",
+    "runs_checked": 1
+  },
+  "orbital inclination": {
+    "total_hits": 1,
+    "last_hit": "2026-03-25",
+    "runs_checked": 1
+  },
+  "spin-orbit misalignment": {
+    "total_hits": 0,
+    "last_hit": null,
+    "runs_checked": 1
+  },
+  "inclination distribution": {
+    "total_hits": 0,
+    "last_hit": null,
+    "runs_checked": 1
   }
 }

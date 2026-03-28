@@ -2,8 +2,15 @@ digest_output.html
 **/__pycache__/
 *.pyc
 .env
+.env.*
 config.yaml
 .coverage
 .pytest_cache/
 .DS_Store
 .vercel
+*.pem
+*.key
+*credentials*.json
+*client-secret*.json
+*service-account*.json
+*token*.json

@@ -609,11 +609,23 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
         req = urllib.request.Request(url)
         req.add_header("User-Agent", "arxiv-digest/1.0 (GitHub Actions; https://github.com/SilkeDainese/arxiv-digest)")
 
-        try:
-            with urllib.request.urlopen(req, timeout=30) as response:
-                xml_data = response.read().decode("utf-8")
-        except Exception as e:
-            print(f"  ⚠️  Error fetching {category}: {e}")
+        xml_data = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=30) as response:
+                    xml_data = response.read().decode("utf-8")
+                break
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < 2:
+                    wait = 10 * (attempt + 1)
+                    print(f"  ⏳ Rate limited on {category}, retrying in {wait}s...")
+                    time.sleep(wait)
+                    continue
+                print(f"  ⚠️  Error fetching {category}: {e}")
+            except Exception as e:
+                print(f"  ⚠️  Error fetching {category}: {e}")
+                break
+        if xml_data is None:
             continue
 
         try:

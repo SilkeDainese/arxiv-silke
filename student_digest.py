@@ -146,7 +146,10 @@ Rules:
 - No LaTeX, no symbols like $M_\\odot$ — write "solar mass" instead
 - No hedging ("struggles to", "carefully calibrated") — just state the result
 - Write like a smart friend explaining over coffee, not like an abstract
-- Never start a sentence with "Researchers", "Scientists", "The authors", "A team", or "The study" — lead with what was found or what is new
+- Never start a sentence with "Researchers", "Scientists", "The authors", "A team", "The study", or "We present" — lead with what was found or what is new
+- NEVER repeat the same phrasing or sentence structure across papers — vary your openings and word choices. If you notice yourself writing a similar pattern twice, rephrase.
+- NEVER reproduce paper titles or author names — only rewrite the summary
+- If the abstract describes a survey, mission, or tool: say what it measured or found, not what it is designed to do
 
 Papers:
 {json.dumps(titles_and_summaries, indent=2)}
@@ -159,7 +162,7 @@ Respond with ONLY a JSON array of objects, one per paper, in order:
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=1000,
+            max_tokens=2000,
             messages=[{"role": "user", "content": prompt}],
         )
         text = response.content[0].text.strip()
@@ -651,6 +654,10 @@ def main(argv: list[str] | None = None) -> int:
             print("\n⚠️  No matching papers for preview — nothing to send.")
             return 0
 
+        missing = sum(1 for p in selected if not p.get("plain_summary", "").strip())
+        if missing:
+            print(f"\n⚠️  {missing}/{len(selected)} papers have no summary (AI rewrite may have failed)")
+
         preview_config = make_student_digest_config(base_config, preview_sub)
         preview_config["recipient_email"] = recipient_email
         html = render_html(
@@ -699,7 +706,18 @@ def main(argv: list[str] | None = None) -> int:
             + ", ".join(students_with_no_papers[:5])
         )
 
-    # 4. Check for duplicate emails (would cause double-sending)
+    # 4. Every paper must have a non-empty summary
+    papers_without_summary = [
+        p["title"][:60] for p in ranked_papers
+        if not p.get("plain_summary", "").strip()
+    ]
+    if papers_without_summary:
+        validation_errors.append(
+            f"{len(papers_without_summary)} paper(s) have no summary: "
+            + ", ".join(papers_without_summary[:3])
+        )
+
+    # 5. Check for duplicate emails (would cause double-sending)
     seen_emails: set[str] = set()
     duplicates: list[str] = []
     for sub in active_subscriptions:

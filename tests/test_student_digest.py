@@ -356,6 +356,7 @@ def make_paper(**overrides: Any) -> dict[str, Any]:
         "student_au_priority": 0,
         "expert_net": 0,
         "journal_ref": "",
+        "plain_summary": "A test summary about stars.",
     }
     defaults.update(overrides)
     return defaults
@@ -641,3 +642,17 @@ class TestPreSendValidation:
         # Two identical subscriptions for the same email
         result = self._run_main([sub, sub], [self._ASTRO_PAPER])
         assert result == 1, "Expected exit code 1 when duplicate emails are detected"
+
+    def test_missing_summary_caught_in_validation(self):
+        """Validation fails when a paper has no plain_summary."""
+        sub = {
+            "email": "student@example.com",
+            "active": True,
+            "package_ids": ["stars"],
+            "max_papers_per_week": 6,
+            "created_at": "2025-01-01",
+            "manage_url": "https://example.com",
+        }
+        paper_no_summary = make_paper(plain_summary="")
+        result = self._run_main([sub], [paper_no_summary])
+        assert result == 1, "Expected exit code 1 when paper has empty summary"

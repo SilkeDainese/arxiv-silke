@@ -1213,18 +1213,45 @@ class TestAnalysePapersCascade:
                     result, method = d.analyse_papers([p], config)
         assert method == "vertex_gemini"
 
-    def test_vertex_gemini_error_falls_back_to_keywords(self):
-        """When Vertex AI Gemini fails, should cascade to keyword fallback."""
+    def test_vertex_gemini_error_falls_back_to_gemini_api(self):
+        """When Vertex AI Gemini fails and GEMINI_API_KEY is set, should try Gemini API."""
         config = make_config(min_score=1, max_papers=10)
         p = make_paper(keyword_hits=50.0)
 
         def fake_vertex(papers, cfg):
             return None, "gemini_errors"
 
-        with patch.dict(os.environ, {}, clear=True):
+        def fake_gemini_api(papers, cfg, key):
+            for paper in papers:
+                paper.update({"relevance_score": 7, "plain_summary": "test",
+                              "why_interesting": "test", "emoji": "🔭",
+                              "highlight_phrase": "test", "kw_tags": [], "method_tags": [],
+                              "is_new_catalog": False, "cite_worthy": False, "new_result": None})
+            return papers, None
+
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}, clear=True):
             with patch.object(d, "HAS_VERTEX_GEMINI", True):
                 with patch.object(d, "_analyse_with_vertex_gemini", fake_vertex):
-                    result, method = d.analyse_papers([p], config)
+                    with patch.object(d, "_analyse_with_gemini_api", fake_gemini_api):
+                        result, method = d.analyse_papers([p], config)
+        assert method == "gemini_api"
+
+    def test_all_ai_fails_falls_back_to_keywords(self):
+        """When all AI tiers fail, should cascade to keyword fallback."""
+        config = make_config(min_score=1, max_papers=10)
+        p = make_paper(keyword_hits=50.0)
+
+        def fake_vertex(papers, cfg):
+            return None, "gemini_errors"
+
+        def fake_gemini_api(papers, cfg, key):
+            return None, "gemini_api_errors"
+
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}, clear=True):
+            with patch.object(d, "HAS_VERTEX_GEMINI", True):
+                with patch.object(d, "_analyse_with_vertex_gemini", fake_vertex):
+                    with patch.object(d, "_analyse_with_gemini_api", fake_gemini_api):
+                        result, method = d.analyse_papers([p], config)
         assert method == "keywords_fallback"
 
     def test_claude_mid_batch_failure_does_not_pollute_papers_for_next_tier(self):

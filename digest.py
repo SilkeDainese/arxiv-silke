@@ -1186,6 +1186,44 @@ def _analyse_with_vertex_gemini(papers: list[dict[str, Any]], config: dict[str, 
     return _filter_and_sort(analysed, config), None
 
 
+def _analyse_with_gemini_api(papers: list[dict[str, Any]], config: dict[str, Any], api_key: str) -> tuple[list[dict[str, Any]] | None, str | None]:
+    """Score papers using Gemini via Google AI API key (no GCP project needed).
+    Returns (results, error_flag). error_flag is None on success, or a string describing the issue."""
+    client = google_genai.Client(api_key=api_key)
+    analysed = []
+    consecutive_failures = 0
+
+    for i, paper in enumerate(papers):
+        print(f"  Analysing {i+1}/{len(papers)}: {paper['title'][:60]}...")
+        prompt = _build_scoring_prompt(paper, config)
+
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt,
+            )
+            text = response.text.strip()
+            if text.startswith("```"):
+                text = re.sub(r"^```[a-z]*\n?", "", text)
+                text = re.sub(r"\n?```$", "", text)
+            analysis = json.loads(text)
+            paper.update(analysis)
+            analysed.append(paper)
+            consecutive_failures = 0
+            print(f"    → score: {analysis.get('relevance_score', '?')}")
+        except Exception as e:
+            print(f"    Error: {e}")
+            consecutive_failures += 1
+            paper.update(_default_analysis(paper))
+            analysed.append(paper)
+
+            if consecutive_failures >= 3:
+                print("  ⚠️  3 consecutive Gemini API failures — switching to fallback...")
+                return None, "gemini_api_errors"
+
+    return _filter_and_sort(analysed, config), None
+
+
 def _fallback_analyse(papers: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
     """Keyword-only scoring when no API key is available."""
     discovery_mode = not config["keywords"]
@@ -1230,13 +1268,14 @@ def _filter_and_sort(analysed: list[dict[str, Any]], config: dict[str, Any]) -> 
 
 
 def analyse_papers(papers: list[dict[str, Any]], config: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
-    """Dispatch to Claude → Vertex AI Gemini → keyword fallback.
+    """Dispatch to Claude → Vertex AI Gemini → Gemini API → keyword fallback.
     Returns (scored_papers, scoring_method) where scoring_method is one of:
-    'claude', 'vertex_gemini', 'keywords', or 'keywords_fallback'."""
+    'claude', 'vertex_gemini', 'gemini_api', 'keywords', or 'keywords_fallback'."""
     if not papers:
         return [], "none"
 
     api_key_claude = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    api_key_gemini = os.environ.get("GEMINI_API_KEY", "").strip()
 
     if api_key_claude and HAS_ANTHROPIC:
         print("  Using Claude for analysis...")
@@ -1250,7 +1289,14 @@ def analyse_papers(papers: list[dict[str, Any]], config: dict[str, Any]) -> tupl
         result, error = _analyse_with_vertex_gemini(copy.deepcopy(papers), config)
         if error is None:
             return result, "vertex_gemini"
-        print("  Vertex AI Gemini unavailable — falling back to keyword-only scoring")
+        print("  Vertex AI Gemini unavailable — trying Gemini API key...")
+
+    if api_key_gemini and HAS_VERTEX_GEMINI:
+        print("  Using Gemini via API key...")
+        result, error = _analyse_with_gemini_api(copy.deepcopy(papers), config, api_key_gemini)
+        if error is None:
+            return result, "gemini_api"
+        print("  Gemini API unavailable — falling back to keyword-only scoring")
         return _fallback_analyse(papers, config), "keywords_fallback"
 
     # No AI available — keyword-only scoring
@@ -1725,11 +1771,12 @@ def _render_skim_card(p: dict[str, Any], github_repo: str) -> str:
 
 def _render_scoring_notice(scoring_method: str) -> str:
     """Return the scoring-method notice banner HTML (or empty string)."""
-    if scoring_method == "vertex_gemini":
+    if scoring_method in ("vertex_gemini", "gemini_api"):
+        label = "Vertex AI / GCP" if scoring_method == "vertex_gemini" else "Google AI"
         return f"""
   <tr><td style="padding:12px 44px">
     <div style="background:{PINE_WASH};border:1px solid {CARD_BORDER};border-radius:6px;padding:14px 18px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:{WARM_GREY};text-align:center">
-      &#x1F916; Papers scored by <strong>Gemini 2.0 Flash (Vertex AI / GCP)</strong>. High-quality AI scoring via Google Cloud.
+      &#x1F916; Papers scored by <strong>Gemini 2.0 Flash ({label})</strong>. High-quality AI scoring via Google Cloud.
     </div>
   </td></tr>"""
     elif scoring_method == "keywords_fallback":
@@ -1797,7 +1844,7 @@ def _render_own_key_nudge(config: dict[str, Any], scoring_method: str) -> str:
     """Gentle nudge to get your own API key if using the shared community key."""
     if config.get("own_api_key"):
         return ""
-    if scoring_method not in {"claude", "vertex_gemini", "keywords_fallback"}:
+    if scoring_method not in {"claude", "vertex_gemini", "gemini_api", "keywords_fallback"}:
         return ""
     github_repo = config.get("github_repo", "")
     secrets_url = f"https://github.com/{github_repo}/settings/secrets/actions" if github_repo else ""
@@ -1846,6 +1893,7 @@ def _render_student_footer(config: dict[str, Any], scoring_method: str) -> str:
     scoring_labels = {
         "claude": "Claude Haiku (Anthropic)",
         "vertex_gemini": "Gemini 2.0 Flash (Vertex AI / GCP)",
+        "gemini_api": "Gemini 2.0 Flash (Google AI)",
         "keywords": "keyword matching",
         "keywords_fallback": "keyword matching (AI unavailable)",
         "none": "AI",
@@ -1917,6 +1965,7 @@ def _render_footer(config: dict[str, Any], scoring_method: str) -> str:
     scoring_labels = {
         "claude": "Claude Haiku (Anthropic)",
         "vertex_gemini": "Gemini 2.0 Flash (Vertex AI / GCP)",
+        "gemini_api": "Gemini 2.0 Flash (Google AI)",
         "keywords": "keyword matching",
         "keywords_fallback": "keyword matching (AI unavailable)",
         "none": "AI",

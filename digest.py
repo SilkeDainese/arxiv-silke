@@ -1570,8 +1570,8 @@ def _render_student_paper_card(p: dict[str, Any]) -> str:
     pkg_label = AU_STUDENT_TRACK_LABELS.get(pkg_ids[0], "") if pkg_ids else ""
     category_line = ""
     if pkg_label or category:
-        label_part = f'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#999">{_esc(pkg_label)}</span>' if pkg_label else ""
-        code_part = f'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#CCC;margin-left:6px">{_esc(category)}</span>' if category else ""
+        label_part = f'<span style="font-family:{FONT_MONO};font-size:11px;color:#999">{_esc(pkg_label)}</span>' if pkg_label else ""
+        code_part = f'<span style="font-family:{FONT_MONO};font-size:11px;color:#999;margin-left:6px">{_esc(category)}</span>' if category else ""
         category_line = f'<div style="margin-bottom:4px">{label_part}{code_part}</div>'
 
     # Line 2: Title (DM Serif Display, linked)
@@ -1601,7 +1601,7 @@ def _render_student_paper_card(p: dict[str, Any]) -> str:
     paper_url = p.get("url", "")
     if paper_url:
         meta_parts.append(
-            f'<a href="{_esc(paper_url)}" style="color:#999;text-decoration:underline;text-underline-offset:2px">Read on arXiv &#8594;</a>'
+            f'<a href="{_esc(paper_url)}" style="color:{PINE_LIGHT};text-decoration:none;text-underline-offset:2px">Read on arXiv &#8594;</a>'
         )
     meta_line = f'<div style="font-family:{FONT_BODY};font-size:12px;color:#999;line-height:1.5">{" &middot; ".join(meta_parts)}</div>'
 
@@ -2020,7 +2020,7 @@ def render_html(papers: list[dict[str, Any]], colleague_papers: list[dict[str, A
             + welcome_html
             + f"""
   <!-- PAPER CARDS -->
-  <tr><td style="padding:0 24px 24px">
+  <tr><td style="padding:12px 24px 24px">
     {cards_html}
   </td></tr>
 """

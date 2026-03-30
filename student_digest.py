@@ -166,6 +166,10 @@ Respond with ONLY a JSON array of objects, one per paper, in order:
             messages=[{"role": "user", "content": prompt}],
         )
         text = response.content[0].text.strip()
+        # Strip markdown fences if Claude wraps with ```json ... ```
+        if text.startswith("```"):
+            text = re.sub(r"^```[a-z]*\n?", "", text)
+            text = re.sub(r"\n?```$", "", text)
         rewrites = json.loads(text)
 
         if len(rewrites) != len(papers):

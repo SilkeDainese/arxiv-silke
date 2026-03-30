@@ -1110,7 +1110,12 @@ def _analyse_with_claude(papers: list[dict[str, Any]], config: dict[str, Any], a
                 max_tokens=600,
                 messages=[{"role": "user", "content": prompt}]
             )
-            analysis = json.loads(response.content[0].text.strip())
+            text = response.content[0].text.strip()
+            # Strip markdown fences if Claude wraps with ```json ... ```
+            if text.startswith("```"):
+                text = re.sub(r"^```[a-z]*\n?", "", text)
+                text = re.sub(r"\n?```$", "", text)
+            analysis = json.loads(text)
             paper.update(analysis)
             analysed.append(paper)
             consecutive_failures = 0

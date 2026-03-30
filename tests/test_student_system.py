@@ -28,6 +28,7 @@ def make_paper(**overrides):
         "published": "2026-03-15",
         "student_package_ids": [],
         "student_au_priority": 0,
+        "plain_summary": "A test summary about exoplanets.",
     }
     paper.update(overrides)
     return paper

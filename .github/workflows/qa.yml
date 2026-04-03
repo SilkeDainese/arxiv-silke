@@ -21,6 +21,9 @@ jobs:
       - name: Install digest dependencies
         run: pip install -r requirements.txt
 
+      - name: Install setup dependencies
+        run: pip install -r setup/requirements.txt
+
       - name: Install test dependencies
         run: pip install pytest
 

@@ -56,9 +56,8 @@ STATS_PATH = Path(__file__).parent / "keyword_stats.json"
 FEEDBACK_STATS_PATH = Path(__file__).parent / "feedback_stats.json"
 
 
-def load_config() -> dict[str, Any]:
-    """Load and validate configuration from config.yaml with sensible defaults."""
-    # Use config.yaml if it exists, otherwise fall back to config.example.yaml
+def _read_yaml() -> dict[str, Any]:
+    """Read and parse the configuration file, returning a dictionary."""
     if CONFIG_PATH.exists():
         config_file = CONFIG_PATH
     elif CONFIG_EXAMPLE_PATH.exists():
@@ -73,6 +72,11 @@ def load_config() -> dict[str, Any]:
     if not isinstance(cfg, dict):
         raise ValueError("config.yaml is empty or not a YAML mapping")
 
+    return cfg
+
+
+def _apply_defaults(cfg: dict[str, Any]) -> None:
+    """Apply default values to the configuration dictionary."""
     # ── New fields with defaults ──
     cfg.setdefault("digest_name", "arXiv Digest")
     cfg.setdefault("researcher_name", "Reader")
@@ -118,6 +122,9 @@ def load_config() -> dict[str, Any]:
         cfg.setdefault("max_papers", 8)
         cfg.setdefault("min_score", 3)
 
+
+def _validate_config(cfg: dict[str, Any]) -> None:
+    """Normalize and validate configuration fields."""
     # ── Backward compat: flat keyword list → weighted dict ──
     if isinstance(cfg["keywords"], str):
         raise ValueError("keywords must be a YAML mapping (keyword: weight), not a bare string")
@@ -163,6 +170,13 @@ def load_config() -> dict[str, Any]:
         cfg["recipient_view_mode"] = "5_min_skim"
     else:
         cfg["recipient_view_mode"] = "deep_read"
+
+
+def load_config() -> dict[str, Any]:
+    """Load and validate configuration from config.yaml with sensible defaults."""
+    cfg = _read_yaml()
+    _apply_defaults(cfg)
+    _validate_config(cfg)
     return cfg
 
 

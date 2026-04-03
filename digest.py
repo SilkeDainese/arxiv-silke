@@ -173,12 +173,12 @@ def load_config() -> dict[str, Any]:
 def load_keyword_stats() -> dict[str, Any]:
     """Load keyword hit statistics from disk, or return empty dict if none exist."""
     if STATS_PATH.exists():
-        with open(STATS_PATH) as f:
-            try:
+        try:
+            with open(STATS_PATH) as f:
                 return json.load(f)
-            except json.JSONDecodeError:
-                print("  ⚠️  keyword_stats.json is corrupted — resetting stats")
-                return {}
+        except (OSError, IOError, json.JSONDecodeError):
+            print("  ⚠️  keyword_stats.json is corrupted or inaccessible — resetting stats")
+            return {}
     return {}
 
 

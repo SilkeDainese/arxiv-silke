@@ -6,9 +6,9 @@ import base64
 import json
 import os
 import re
-import urllib.error
-import urllib.parse
-import urllib.request
+from urllib.error import HTTPError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 from http.server import BaseHTTPRequestHandler
 from typing import Any
 
@@ -42,8 +42,8 @@ def _github_request(method: str, url: str, payload: dict[str, Any] | None = None
     if payload is not None:
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
-    request = urllib.request.Request(url, data=data, headers=headers, method=method)
-    with urllib.request.urlopen(request, timeout=30) as response:
+    request = Request(url, data=data, headers=headers, method=method)
+    with urlopen(request, timeout=30) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -51,11 +51,11 @@ def _load_report_store() -> tuple[list[dict[str, Any]], str | None]:
     """Load the failures JSON from the private GitHub repo."""
     url = (
         f"{GITHUB_API}/repos/{STORAGE_REPO}/contents/"
-        f"{urllib.parse.quote(REPORT_PATH)}?ref={urllib.parse.quote(STORAGE_BRANCH)}"
+        f"{quote(REPORT_PATH)}?ref={quote(STORAGE_BRANCH)}"
     )
     try:
         data = _github_request("GET", url)
-    except urllib.error.HTTPError as exc:
+    except HTTPError as exc:
         if exc.code == 404:
             return [], None
         raise
@@ -77,7 +77,7 @@ def _save_report_store(store: list[dict[str, Any]], sha: str | None, message: st
     }
     if sha:
         payload["sha"] = sha
-    url = f"{GITHUB_API}/repos/{STORAGE_REPO}/contents/{urllib.parse.quote(REPORT_PATH)}"
+    url = f"{GITHUB_API}/repos/{STORAGE_REPO}/contents/{quote(REPORT_PATH)}"
     _github_request("PUT", url, payload)
 
 

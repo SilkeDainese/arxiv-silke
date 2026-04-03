@@ -10,6 +10,7 @@ Created by Silke S. Dainese · dainese@phys.au.dk · silkedainese.github.io
 """
 from __future__ import annotations
 
+import concurrent.futures
 import copy
 import html as html_mod
 import os
@@ -56,9 +57,8 @@ STATS_PATH = Path(__file__).parent / "keyword_stats.json"
 FEEDBACK_STATS_PATH = Path(__file__).parent / "feedback_stats.json"
 
 
-def load_config() -> dict[str, Any]:
-    """Load and validate configuration from config.yaml with sensible defaults."""
-    # Use config.yaml if it exists, otherwise fall back to config.example.yaml
+def _read_yaml() -> dict[str, Any]:
+    """Read and parse the configuration file, returning a dictionary."""
     if CONFIG_PATH.exists():
         config_file = CONFIG_PATH
     elif CONFIG_EXAMPLE_PATH.exists():
@@ -73,6 +73,11 @@ def load_config() -> dict[str, Any]:
     if not isinstance(cfg, dict):
         raise ValueError("config.yaml is empty or not a YAML mapping")
 
+    return cfg
+
+
+def _apply_defaults(cfg: dict[str, Any]) -> None:
+    """Apply default values to the configuration dictionary."""
     # ── New fields with defaults ──
     cfg.setdefault("digest_name", "arXiv Digest")
     cfg.setdefault("researcher_name", "Reader")
@@ -118,6 +123,9 @@ def load_config() -> dict[str, Any]:
         cfg.setdefault("max_papers", 8)
         cfg.setdefault("min_score", 3)
 
+
+def _validate_config(cfg: dict[str, Any]) -> None:
+    """Normalize and validate configuration fields."""
     # ── Backward compat: flat keyword list → weighted dict ──
     if isinstance(cfg["keywords"], str):
         raise ValueError("keywords must be a YAML mapping (keyword: weight), not a bare string")
@@ -163,6 +171,13 @@ def load_config() -> dict[str, Any]:
         cfg["recipient_view_mode"] = "5_min_skim"
     else:
         cfg["recipient_view_mode"] = "deep_read"
+
+
+def load_config() -> dict[str, Any]:
+    """Load and validate configuration from config.yaml with sensible defaults."""
+    cfg = _read_yaml()
+    _apply_defaults(cfg)
+    _validate_config(cfg)
     return cfg
 
 
@@ -173,12 +188,12 @@ def load_config() -> dict[str, Any]:
 def load_keyword_stats() -> dict[str, Any]:
     """Load keyword hit statistics from disk, or return empty dict if none exist."""
     if STATS_PATH.exists():
-        with open(STATS_PATH) as f:
-            try:
+        try:
+            with open(STATS_PATH) as f:
                 return json.load(f)
-            except json.JSONDecodeError:
-                print("  ⚠️  keyword_stats.json is corrupted — resetting stats")
-                return {}
+        except (OSError, IOError, json.JSONDecodeError):
+            print("  ⚠️  keyword_stats.json is corrupted or inaccessible — resetting stats")
+            return {}
     return {}
 
 
@@ -585,6 +600,180 @@ def _categories_to_package_tags(categories: list[str]) -> list[str]:
 #  ARXIV FETCHING
 # ─────────────────────────────────────────────────────────────
 
+def _build_arxiv_query(category: str) -> str:
+    """Build the arXiv API URL for a given category."""
+    params = {
+        "search_query": f"cat:{category}",
+        "start": 0,
+        "max_results": 100,
+        "sortBy": "submittedDate",
+        "sortOrder": "descending",
+    }
+    return "https://export.arxiv.org/api/query?" + urllib.parse.urlencode(params)
+
+
+def _execute_arxiv_request(url: str, category: str) -> str | None:
+    """Execute the request to the arXiv API, handling rate limits and errors."""
+    req = urllib.request.Request(url)
+    req.add_header("User-Agent", "arxiv-digest/1.0 (GitHub Actions; https://github.com/SilkeDainese/arxiv-digest)")
+
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                return response.read().decode("utf-8")
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 2:
+                wait = 10 * (attempt + 1)
+                print(f"  ⏳ Rate limited on {category}, retrying in {wait}s...")
+                time.sleep(wait)
+                continue
+            print(f"  ⚠️  Error fetching {category}: {e}")
+        except Exception as e:
+            print(f"  ⚠️  Error fetching {category}: {e}")
+            break
+    return None
+
+
+def _parse_arxiv_response(xml_data: str, category: str, config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Parse the arXiv API XML response and extract paper metadata."""
+    papers = []
+    try:
+        root = ET.fromstring(xml_data)
+    except ET.ParseError as exc:
+        print(f"  ⚠️  Failed to parse arXiv XML for {category}: {exc}")
+        return papers
+    ns = {"atom": "http://www.w3.org/2005/Atom"}
+    cutoff = datetime.now(timezone.utc) - timedelta(days=config["days_back"])
+
+    all_entries = root.findall("atom:entry", ns)
+    skipped_malformed = 0
+    for entry in all_entries:
+        try:
+            published_str = entry.find("atom:published", ns).text
+            published = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
+            if published < cutoff:
+                continue
+
+            arxiv_id = entry.find("atom:id", ns).text.split("/abs/")[-1]
+            title = (entry.find("atom:title", ns).text or "").strip().replace("\n", " ")
+            abstract = (entry.find("atom:summary", ns).text or "").strip().replace("\n", " ")
+            authors = [a.find("atom:name", ns).text for a in entry.findall("atom:author", ns) if a.find("atom:name", ns) is not None and a.find("atom:name", ns).text]
+        except (AttributeError, TypeError, ValueError):
+            skipped_malformed += 1
+            continue
+
+        # Use the paper's actual primary category, not the query category
+        primary_cat_el = entry.find("{http://arxiv.org/schemas/atom}primary_category")
+        paper_category = (
+            primary_cat_el.get("term", category)
+            if primary_cat_el is not None
+            else category
+        )
+
+        # Check research authors (relevance boost)
+        known_flag = []
+        for author in authors:
+            for known in config["research_authors"]:
+                if known.lower() in author.lower():
+                    known_flag.append(author)
+                    break
+
+        # Check colleagues — people matches
+        colleague_flag = []
+        colleague_details: list[dict[str, str]] = []
+        for author in authors:
+            for colleague in config["colleagues"]["people"]:
+                for pattern in colleague.get("match", []):
+                    if pattern.lower() in author.lower():
+                        colleague_name = colleague.get("name", "Unknown")
+                        if colleague_name not in colleague_flag:
+                            colleague_flag.append(colleague_name)
+                        detail = {"name": colleague_name}
+                        note = str(colleague.get("note", "")).strip()
+                        if note and not any(
+                            existing.get("name") == colleague_name
+                            for existing in colleague_details
+                        ):
+                            detail["note"] = note
+                            colleague_details.append(detail)
+                        elif not note and not any(
+                            existing.get("name") == colleague_name
+                            for existing in colleague_details
+                        ):
+                            colleague_details.append(detail)
+                        break
+
+        # Check colleagues — institutional matches (arXiv affiliation XML + abstract fallback)
+        affiliations = []
+        author_affiliations: dict[str, list[str]] = {}
+        ns_arxiv = {"arxiv": "http://arxiv.org/schemas/atom"}
+        for author_el in entry.findall("atom:author", ns):
+            author_name = author_el.findtext("atom:name", "", ns)
+            affs = [
+                aff_el.text
+                for aff_el in author_el.findall("arxiv:affiliation", ns_arxiv)
+                if aff_el.text
+            ]
+            if affs and author_name:
+                author_affiliations[author_name] = affs
+            affiliations.extend(affs)
+        affiliation_text = " ".join(affiliations).lower()
+        text_lower = (title + " " + abstract).lower()
+        for inst in config["colleagues"].get("institutions", []):
+            inst_lower = inst.lower()
+            if inst_lower in affiliation_text or inst_lower in text_lower:
+                if inst not in colleague_flag:
+                    colleague_flag.append(inst)
+                if not any(
+                    existing.get("name") == inst for existing in colleague_details
+                ):
+                    colleague_details.append({"name": inst})
+
+        # Check if this is the user's own paper
+        is_own_paper = False
+        for pattern in config.get("self_match", []):
+            for author in authors:
+                if pattern.lower() in author.lower():
+                    is_own_paper = True
+                    break
+            if is_own_paper:
+                break
+
+        # Weighted keyword scoring (raw sum)
+        matched_keywords = _matched_keywords_for_text(title + " " + abstract, config)
+        kw_hits_raw = sum(config["keywords"][kw] for kw in matched_keywords)
+
+        # Capture journal reference if available (e.g. "Nature Astronomy", "Science")
+        journal_ref_el = entry.find("{http://arxiv.org/schemas/atom}journal_ref")
+        journal_ref = (journal_ref_el.text or "").strip() if journal_ref_el is not None else ""
+
+        papers.append({
+            "id": arxiv_id,
+            "title": title,
+            "abstract": abstract,
+            "authors": authors,
+            "author_affiliations": author_affiliations,
+            "published": published.strftime("%Y-%m-%d"),
+            "category": paper_category,
+            "url": f"https://arxiv.org/abs/{arxiv_id}",
+            "known_authors": known_flag,
+            "colleague_matches": colleague_flag,
+            "colleague_details": colleague_details,
+            "is_own_paper": is_own_paper,
+            "matched_keywords": matched_keywords,
+            "keyword_hits_raw": kw_hits_raw,
+            "journal_ref": journal_ref,
+            "feedback_bias": 0,
+        })
+
+    if skipped_malformed:
+        print(f"  ⚠️  Skipped {skipped_malformed} malformed entries in {category}")
+    if skipped_malformed == len(all_entries) and all_entries:
+        print(f"  ⚠️  ALL entries from {category} were malformed — arXiv API format may have changed")
+
+    return papers
+
+
 def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Fetch recent papers from the arXiv API for configured categories.
 
@@ -599,171 +788,15 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
         if i > 0:
             time.sleep(3)  # arXiv etiquette: pause between requests
 
-        params = {
-            "search_query": f"cat:{category}",
-            "start": 0,
-            "max_results": 100,
-            "sortBy": "submittedDate",
-            "sortOrder": "descending",
-        }
-        url = "https://export.arxiv.org/api/query?" + urllib.parse.urlencode(params)
+        url = _build_arxiv_query(category)
         print(f"  Fetching {category}...")
 
-        req = urllib.request.Request(url)
-        req.add_header("User-Agent", "arxiv-digest/1.0 (GitHub Actions; https://github.com/SilkeDainese/arxiv-digest)")
-
-        xml_data = None
-        for attempt in range(3):
-            try:
-                with urllib.request.urlopen(req, timeout=30) as response:
-                    xml_data = response.read().decode("utf-8")
-                break
-            except urllib.error.HTTPError as e:
-                if e.code == 429 and attempt < 2:
-                    wait = 10 * (attempt + 1)
-                    print(f"  ⏳ Rate limited on {category}, retrying in {wait}s...")
-                    time.sleep(wait)
-                    continue
-                print(f"  ⚠️  Error fetching {category}: {e}")
-            except Exception as e:
-                print(f"  ⚠️  Error fetching {category}: {e}")
-                break
+        xml_data = _execute_arxiv_request(url, category)
         if xml_data is None:
             continue
 
-        try:
-            root = ET.fromstring(xml_data)
-        except ET.ParseError as exc:
-            print(f"  ⚠️  Failed to parse arXiv XML for {category}: {exc}")
-            continue
-        ns = {"atom": "http://www.w3.org/2005/Atom"}
-        cutoff = datetime.now(timezone.utc) - timedelta(days=config["days_back"])
-
-        all_entries = root.findall("atom:entry", ns)
-        skipped_malformed = 0
-        for entry in all_entries:
-            try:
-                published_str = entry.find("atom:published", ns).text
-                published = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
-                if published < cutoff:
-                    continue
-
-                arxiv_id = entry.find("atom:id", ns).text.split("/abs/")[-1]
-                title = (entry.find("atom:title", ns).text or "").strip().replace("\n", " ")
-                abstract = (entry.find("atom:summary", ns).text or "").strip().replace("\n", " ")
-                authors = [a.find("atom:name", ns).text for a in entry.findall("atom:author", ns) if a.find("atom:name", ns) is not None and a.find("atom:name", ns).text]
-            except (AttributeError, TypeError, ValueError):
-                skipped_malformed += 1
-                continue
-
-            # Use the paper's actual primary category, not the query category
-            primary_cat_el = entry.find("{http://arxiv.org/schemas/atom}primary_category")
-            paper_category = (
-                primary_cat_el.get("term", category)
-                if primary_cat_el is not None
-                else category
-            )
-
-            # Check research authors (relevance boost)
-            known_flag = []
-            for author in authors:
-                for known in config["research_authors"]:
-                    if known.lower() in author.lower():
-                        known_flag.append(author)
-                        break
-
-            # Check colleagues — people matches
-            colleague_flag = []
-            colleague_details: list[dict[str, str]] = []
-            for author in authors:
-                for colleague in config["colleagues"]["people"]:
-                    for pattern in colleague.get("match", []):
-                        if pattern.lower() in author.lower():
-                            colleague_name = colleague.get("name", "Unknown")
-                            if colleague_name not in colleague_flag:
-                                colleague_flag.append(colleague_name)
-                            detail = {"name": colleague_name}
-                            note = str(colleague.get("note", "")).strip()
-                            if note and not any(
-                                existing.get("name") == colleague_name
-                                for existing in colleague_details
-                            ):
-                                detail["note"] = note
-                                colleague_details.append(detail)
-                            elif not note and not any(
-                                existing.get("name") == colleague_name
-                                for existing in colleague_details
-                            ):
-                                colleague_details.append(detail)
-                            break
-
-            # Check colleagues — institutional matches (arXiv affiliation XML + abstract fallback)
-            affiliations = []
-            author_affiliations: dict[str, list[str]] = {}
-            ns_arxiv = {"arxiv": "http://arxiv.org/schemas/atom"}
-            for author_el in entry.findall("atom:author", ns):
-                author_name = author_el.findtext("atom:name", "", ns)
-                affs = [
-                    aff_el.text
-                    for aff_el in author_el.findall("arxiv:affiliation", ns_arxiv)
-                    if aff_el.text
-                ]
-                if affs and author_name:
-                    author_affiliations[author_name] = affs
-                affiliations.extend(affs)
-            affiliation_text = " ".join(affiliations).lower()
-            text_lower = (title + " " + abstract).lower()
-            for inst in config["colleagues"].get("institutions", []):
-                inst_lower = inst.lower()
-                if inst_lower in affiliation_text or inst_lower in text_lower:
-                    if inst not in colleague_flag:
-                        colleague_flag.append(inst)
-                    if not any(
-                        existing.get("name") == inst for existing in colleague_details
-                    ):
-                        colleague_details.append({"name": inst})
-
-            # Check if this is the user's own paper
-            is_own_paper = False
-            for pattern in config.get("self_match", []):
-                for author in authors:
-                    if pattern.lower() in author.lower():
-                        is_own_paper = True
-                        break
-                if is_own_paper:
-                    break
-
-            # Weighted keyword scoring (raw sum)
-            matched_keywords = _matched_keywords_for_text(title + " " + abstract, config)
-            kw_hits_raw = sum(config["keywords"][kw] for kw in matched_keywords)
-
-            # Capture journal reference if available (e.g. "Nature Astronomy", "Science")
-            journal_ref_el = entry.find("{http://arxiv.org/schemas/atom}journal_ref")
-            journal_ref = (journal_ref_el.text or "").strip() if journal_ref_el is not None else ""
-
-            papers.append({
-                "id": arxiv_id,
-                "title": title,
-                "abstract": abstract,
-                "authors": authors,
-                "author_affiliations": author_affiliations,
-                "published": published.strftime("%Y-%m-%d"),
-                "category": paper_category,
-                "url": f"https://arxiv.org/abs/{arxiv_id}",
-                "known_authors": known_flag,
-                "colleague_matches": colleague_flag,
-                "colleague_details": colleague_details,
-                "is_own_paper": is_own_paper,
-                "matched_keywords": matched_keywords,
-                "keyword_hits_raw": kw_hits_raw,
-                "journal_ref": journal_ref,
-                "feedback_bias": 0,
-            })
-
-        if skipped_malformed:
-            print(f"  ⚠️  Skipped {skipped_malformed} malformed entries in {category}")
-        if skipped_malformed == len(all_entries) and all_entries:
-            print(f"  ⚠️  ALL entries from {category} were malformed — arXiv API format may have changed")
+        category_papers = _parse_arxiv_response(xml_data, category, config)
+        papers.extend(category_papers)
 
     # Deduplicate (same paper may appear in multiple categories)
     seen = set()
@@ -1101,9 +1134,8 @@ def _analyse_with_claude(papers: list[dict[str, Any]], config: dict[str, Any], a
     client = anthropic.Anthropic(api_key=api_key)
     analysed = []
     consecutive_failures = 0
-    credit_error = False
 
-    for i, paper in enumerate(papers):
+    def process_paper(i: int, paper: dict[str, Any]) -> tuple[dict[str, Any], Exception | None, bool]:
         print(f"  Analysing {i+1}/{len(papers)}: {paper['title'][:60]}...")
         prompt = _build_scoring_prompt(paper, config)
 
@@ -1120,28 +1152,38 @@ def _analyse_with_claude(papers: list[dict[str, Any]], config: dict[str, Any], a
                 text = re.sub(r"\n?```$", "", text)
             analysis = json.loads(text)
             paper.update(analysis)
-            analysed.append(paper)
-            consecutive_failures = 0
             print(f"    → score: {analysis.get('relevance_score', '?')}")
+            return paper, None, False
         except Exception as e:
             error_str = str(e)
             print(f"    Error: {error_str}")
-            consecutive_failures += 1
-
-            # Detect credit/billing errors — no point retrying
-            if "credit balance" in error_str.lower() or "billing" in error_str.lower():
-                credit_error = True
-                print("  ⚠️  Claude API credits exhausted — switching to fallback...")
-                # Return remaining papers unscored so the dispatcher can cascade
-                return None, "claude_no_credits"
-
+            is_credit_error = "credit balance" in error_str.lower() or "billing" in error_str.lower()
             paper.update(_default_analysis(paper))
+            return paper, e, is_credit_error
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(process_paper, i, paper) for i, paper in enumerate(papers)]
+        for future in futures:
+            paper, error, is_credit_error = future.result()
             analysed.append(paper)
 
-            # If 3+ consecutive failures, bail out (API might be down)
-            if consecutive_failures >= 3:
-                print("  ⚠️  3 consecutive Claude failures — switching to fallback...")
-                return None, "claude_errors"
+            if error:
+                consecutive_failures += 1
+
+                # Detect credit/billing errors — no point retrying
+                if is_credit_error:
+                    print("  ⚠️  Claude API credits exhausted — switching to fallback...")
+                    # Return remaining papers unscored so the dispatcher can cascade
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    return None, "claude_no_credits"
+
+                # If 3+ consecutive failures, bail out (API might be down)
+                if consecutive_failures >= 3:
+                    print("  ⚠️  3 consecutive Claude failures — switching to fallback...")
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    return None, "claude_errors"
+            else:
+                consecutive_failures = 0
 
     return _filter_and_sort(analysed, config), None
 
@@ -1155,7 +1197,7 @@ def _analyse_with_vertex_gemini(papers: list[dict[str, Any]], config: dict[str, 
     analysed = []
     consecutive_failures = 0
 
-    for i, paper in enumerate(papers):
+    def process_paper(i: int, paper: dict[str, Any]) -> tuple[dict[str, Any], Exception | None]:
         print(f"  Analysing {i+1}/{len(papers)}: {paper['title'][:60]}...")
         prompt = _build_scoring_prompt(paper, config)
 
@@ -1171,19 +1213,28 @@ def _analyse_with_vertex_gemini(papers: list[dict[str, Any]], config: dict[str, 
                 text = re.sub(r"\n?```$", "", text)
             analysis = json.loads(text)
             paper.update(analysis)
-            analysed.append(paper)
-            consecutive_failures = 0
             print(f"    → score: {analysis.get('relevance_score', '?')}")
+            return paper, None
         except Exception as e:
             error_str = str(e)
             print(f"    Error: {error_str}")
-            consecutive_failures += 1
             paper.update(_default_analysis(paper))
+            return paper, e
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(process_paper, i, paper) for i, paper in enumerate(papers)]
+        for future in futures:
+            paper, error = future.result()
             analysed.append(paper)
 
-            if consecutive_failures >= 3:
-                print("  ⚠️  3 consecutive Vertex AI Gemini failures — switching to fallback...")
-                return None, "gemini_errors"
+            if error:
+                consecutive_failures += 1
+                if consecutive_failures >= 3:
+                    print("  ⚠️  3 consecutive Vertex AI Gemini failures — switching to fallback...")
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    return None, "gemini_errors"
+            else:
+                consecutive_failures = 0
 
     return _filter_and_sort(analysed, config), None
 
@@ -1195,7 +1246,7 @@ def _analyse_with_gemini_api(papers: list[dict[str, Any]], config: dict[str, Any
     analysed = []
     consecutive_failures = 0
 
-    for i, paper in enumerate(papers):
+    def process_paper(i: int, paper: dict[str, Any]) -> tuple[dict[str, Any], Exception | None]:
         print(f"  Analysing {i+1}/{len(papers)}: {paper['title'][:60]}...")
         prompt = _build_scoring_prompt(paper, config)
 
@@ -1210,18 +1261,27 @@ def _analyse_with_gemini_api(papers: list[dict[str, Any]], config: dict[str, Any
                 text = re.sub(r"\n?```$", "", text)
             analysis = json.loads(text)
             paper.update(analysis)
-            analysed.append(paper)
-            consecutive_failures = 0
             print(f"    → score: {analysis.get('relevance_score', '?')}")
+            return paper, None
         except Exception as e:
             print(f"    Error: {e}")
-            consecutive_failures += 1
             paper.update(_default_analysis(paper))
+            return paper, e
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(process_paper, i, paper) for i, paper in enumerate(papers)]
+        for future in futures:
+            paper, error = future.result()
             analysed.append(paper)
 
-            if consecutive_failures >= 3:
-                print("  ⚠️  3 consecutive Gemini API failures — switching to fallback...")
-                return None, "gemini_api_errors"
+            if error:
+                consecutive_failures += 1
+                if consecutive_failures >= 3:
+                    print("  ⚠️  3 consecutive Gemini API failures — switching to fallback...")
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    return None, "gemini_api_errors"
+            else:
+                consecutive_failures = 0
 
     return _filter_and_sort(analysed, config), None
 

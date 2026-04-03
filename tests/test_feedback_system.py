@@ -366,20 +366,19 @@ class TestFetchAggregateFeedback:
     def test_returns_data_on_success(self):
         from student_digest import fetch_aggregate_feedback
 
-        def fake_urlopen(request, timeout=None):
+        def fake_post(*args, **kwargs):
             resp = mock.MagicMock()
-            resp.read.return_value = json.dumps({
+            resp.json.return_value = {
                 "ok": True,
                 "aggregated": {"p1": {"net": 2}},
                 "total_votes": 5,
-            }).encode()
-            resp.__enter__ = mock.MagicMock(return_value=resp)
-            resp.__exit__ = mock.MagicMock(return_value=False)
+            }
+            resp.raise_for_status = mock.MagicMock()
             return resp
 
         with (
             mock.patch.dict("os.environ", {"STUDENT_ADMIN_TOKEN": "tok"}, clear=False),
-            mock.patch("urllib.request.urlopen", side_effect=fake_urlopen),
+            mock.patch("requests.post", side_effect=fake_post),
         ):
             result = fetch_aggregate_feedback()
             assert result == {"p1": {"net": 2}}

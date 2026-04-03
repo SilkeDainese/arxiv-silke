@@ -302,22 +302,16 @@ def test_student_digest_preview_writes_html(tmp_path, monkeypatch):
 
 def test_fetch_student_subscriptions_skips_invalid_records(monkeypatch):
     class FakeResponse:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def read(self):
-            return (
-                b'{"subscriptions": ['
-                b'{"email": "ok@example.com", "package_ids": ["stars"], "max_papers_per_week": 5, "active": true},'
-                b'{"email": "", "package_ids": [], "max_papers_per_week": 3, "active": true}'
-                b']}'
-            )
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {"subscriptions": [
+                {"email": "ok@example.com", "package_ids": ["stars"], "max_papers_per_week": 5, "active": True},
+                {"email": "", "package_ids": [], "max_papers_per_week": 3, "active": True}
+            ]}
 
     monkeypatch.setenv("STUDENT_ADMIN_TOKEN", "secret-token")
-    monkeypatch.setattr(sd.urllib.request, "urlopen", lambda request, timeout=30: FakeResponse())
+    monkeypatch.setattr(sd.requests, "post", lambda *args, **kwargs: FakeResponse())
 
     subscriptions = sd.fetch_student_subscriptions()
 
@@ -383,13 +377,9 @@ def test_student_digest_continues_after_send_failure(monkeypatch):
 def test_student_digest_exits_on_registry_auth_error(monkeypatch):
     """HTTP 401 from the student registry should exit with code 1 and a clear message."""
     def raise_401():
-        raise urllib.error.HTTPError(
-            url="https://example.com/api/students",
-            code=401,
-            msg="Unauthorized",
-            hdrs={},
-            fp=None,
-        )
+        exc = sd.requests.exceptions.HTTPError("Unauthorized")
+        exc.response = type("Response", (), {"status_code": 401})()
+        raise exc
 
     monkeypatch.setattr(sd, "fetch_student_subscriptions", raise_401)
     exit_code = sd.main([])
@@ -399,13 +389,9 @@ def test_student_digest_exits_on_registry_auth_error(monkeypatch):
 def test_student_digest_exits_on_registry_forbidden(monkeypatch):
     """HTTP 403 from the student registry should exit with code 1."""
     def raise_403():
-        raise urllib.error.HTTPError(
-            url="https://example.com/api/students",
-            code=403,
-            msg="Forbidden",
-            hdrs={},
-            fp=None,
-        )
+        exc = sd.requests.exceptions.HTTPError("Forbidden")
+        exc.response = type("Response", (), {"status_code": 403})()
+        raise exc
 
     monkeypatch.setattr(sd, "fetch_student_subscriptions", raise_403)
     exit_code = sd.main([])
@@ -415,7 +401,7 @@ def test_student_digest_exits_on_registry_forbidden(monkeypatch):
 def test_student_digest_exits_on_registry_network_error(monkeypatch):
     """URLError (network failure) should exit with code 1."""
     def raise_url_error():
-        raise urllib.error.URLError("Connection refused")
+        raise sd.requests.exceptions.RequestException("Connection refused")
 
     monkeypatch.setattr(sd, "fetch_student_subscriptions", raise_url_error)
     exit_code = sd.main([])

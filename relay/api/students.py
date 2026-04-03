@@ -638,34 +638,7 @@ def _token_error_page(message: str) -> str:
 
 # ─────── Settings page ───────────────────────────────────────
 
-def _manage_page(
-    email: str,
-    mode: str,
-    package_ids: list[str] | None = None,
-    max_papers_per_week: int = DEFAULT_MAX_PAPERS,
-    *,
-    settings_token: str = "",
-) -> str:
-    """Return the passwordless student subscription management page."""
-    is_settings = mode == "settings" and settings_token
-    safe_email = html.escape(email)
-    initial_packages = json.dumps(list(package_ids or []))
-    initial_max_papers = clamp_max_papers(max_papers_per_week)
-    packages_markup = "\n".join(
-        f"""
-        <label class="package">
-          <input type="checkbox" name="package_ids" value="{html.escape(package_id)}">
-          <span>{html.escape(label)}</span>
-        </label>
-        """
-        for package_id, label in package_labels().items()
-    )
-    return f"""<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AU student digest</title>
+_MANAGE_PAGE_STYLE = f"""
     <style>
       :root {{
         --pine: {_PINE};
@@ -843,6 +816,38 @@ def _manage_page(
         color: {_ALERT_RED};
       }}
     </style>
+"""
+
+
+def _manage_page(
+    email: str,
+    mode: str,
+    package_ids: list[str] | None = None,
+    max_papers_per_week: int = DEFAULT_MAX_PAPERS,
+    *,
+    settings_token: str = "",
+) -> str:
+    """Return the passwordless student subscription management page."""
+    is_settings = mode == "settings" and settings_token
+    safe_email = html.escape(email)
+    initial_packages = json.dumps(list(package_ids or []))
+    initial_max_papers = clamp_max_papers(max_papers_per_week)
+    packages_markup = "\n".join(
+        f"""
+        <label class="package">
+          <input type="checkbox" name="package_ids" value="{html.escape(package_id)}">
+          <span>{html.escape(label)}</span>
+        </label>
+        """
+        for package_id, label in package_labels().items()
+    )
+    return f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AU student digest</title>
+{_MANAGE_PAGE_STYLE}
   </head>
   <body>
     <main>
@@ -886,6 +891,13 @@ def _manage_page(
       {f'<div style="font-size:13px;text-align:center;margin-top:16px"><a href="{html.escape(_build_manage_url(email))}&amp;mode=unsubscribe" style="color:{_SOFT_GREY};text-decoration:none">Unsubscribe</a></div>' if is_settings else ""}
       <input type="hidden" id="settings-token" value="{html.escape(settings_token)}">
     </main>
+{_manage_page_script(initial_packages, initial_max_papers)}
+  </body>
+</html>"""
+
+
+def _manage_page_script(initial_packages: str, initial_max_papers: int) -> str:
+    return f"""
     <script>
       const initialPackages = {initial_packages};
       const initialMaxPapers = {initial_max_papers};
@@ -985,9 +997,7 @@ def _manage_page(
 
       // Initialise
       setPackages(initialPackages);
-    </script>
-  </body>
-</html>"""
+    </script>"""
 
 
 class handler(BaseHTTPRequestHandler):

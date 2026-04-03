@@ -292,21 +292,18 @@ class TestWelcomeSentPreservation:
     def _fetch_with_relay(self, welcome_sent: bool) -> list[dict]:
         """Call fetch_student_subscriptions() with a mocked relay response."""
         import json
-        import io
 
-        fake_response_body = json.dumps(self._make_relay_response(welcome_sent)).encode("utf-8")
+        fake_response_data = self._make_relay_response(welcome_sent)
 
         class _FakeResponse:
-            def read(self):
-                return fake_response_body
-            def __enter__(self):
-                return self
-            def __exit__(self, *_):
+            def json(self):
+                return fake_response_data
+            def raise_for_status(self):
                 pass
 
         with (
             patch.dict("os.environ", {"STUDENT_ADMIN_TOKEN": "test-token"}, clear=False),
-            patch("urllib.request.urlopen", return_value=_FakeResponse()),
+            patch("requests.post", return_value=_FakeResponse()),
         ):
             return sd.fetch_student_subscriptions()
 

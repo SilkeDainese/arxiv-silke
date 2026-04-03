@@ -14,6 +14,8 @@ import student_registry
 from relay.api import _registry as relay_registry
 
 
+import pytest
+
 def test_package_lists_match() -> None:
     """Root registry and relay registry must expose the same package IDs."""
     root = sorted(student_registry.AVAILABLE_STUDENT_PACKAGES)
@@ -24,3 +26,38 @@ def test_package_lists_match() -> None:
         f"  relay/_registry:  {relay}\n"
         "Update the shorter list to include all packages from the longer one."
     )
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        # Normal valid values within range
+        (5, 5),
+        ("5", 5),
+        (5.5, 5),
+        ("10", 10),
+
+        # Edge bounds
+        (1, 1),
+        ("1", 1),
+        (20, 20),
+        ("20", 20),
+
+        # Out of bounds - should be clamped
+        (0, 1),
+        (-5, 1),
+        (21, 20),
+        (100, 20),
+        ("25", 20),
+
+        # Invalid types/values - should fall back to default (6)
+        (None, 6),
+        ("abc", 6),
+        ("", 6),
+        ([], 6),
+        ({}, 6),
+    ],
+)
+def test_clamp_max_papers(value: object, expected: int) -> None:
+    """Ensure max_papers are properly parsed and clamped to [1, 20]."""
+    assert student_registry.clamp_max_papers(value) == expected

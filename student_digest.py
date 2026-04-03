@@ -11,9 +11,7 @@ import json
 import os
 import re
 import time
-import urllib.error
-import urllib.parse
-import urllib.request
+import requests
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -221,17 +219,14 @@ def fetch_student_subscriptions() -> list[dict[str, Any]]:
     if not admin_token:
         raise RuntimeError("STUDENT_ADMIN_TOKEN is required for student digests.")
 
-    payload = json.dumps(
-        {"action": "admin_list", "admin_token": admin_token}
-    ).encode("utf-8")
-    request = urllib.request.Request(
+    payload = {"action": "admin_list", "admin_token": admin_token}
+    response = requests.post(
         STUDENT_REGISTRY_URL,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
+        json=payload,
+        timeout=30,
     )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        data = json.loads(response.read().decode("utf-8"))
+    response.raise_for_status()
+    data = response.json()
     subscriptions: list[dict[str, Any]] = []
     for raw_subscription in data.get("subscriptions", []):
         try:
@@ -252,20 +247,18 @@ def _mark_welcome_sent(email: str) -> None:
     admin_token = os.environ.get("STUDENT_ADMIN_TOKEN", "").strip()
     if not admin_token:
         return
-    payload = json.dumps({
+    payload = {
         "action": "mark_welcome_sent",
         "admin_token": admin_token,
         "email": email,
-    }).encode("utf-8")
+    }
     try:
-        request = urllib.request.Request(
+        response = requests.post(
             STUDENT_REGISTRY_URL,
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST",
+            json=payload,
+            timeout=15,
         )
-        with urllib.request.urlopen(request, timeout=15) as response:
-            response.read()
+        response.raise_for_status()
         print(f"   ✓ Marked welcome_sent for {email}")
     except Exception as exc:
         print(f"   ⚠️  Could not mark welcome_sent for {email}: {exc}")
@@ -281,18 +274,15 @@ def fetch_aggregate_feedback() -> dict[str, dict[str, Any]]:
     if not admin_token:
         return {}
 
-    payload = json.dumps(
-        {"action": "aggregate", "admin_token": admin_token}
-    ).encode("utf-8")
+    payload = {"action": "aggregate", "admin_token": admin_token}
     try:
-        request = urllib.request.Request(
+        response = requests.post(
             FEEDBACK_RELAY_URL,
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST",
+            json=payload,
+            timeout=30,
         )
-        with urllib.request.urlopen(request, timeout=30) as response:
-            data = json.loads(response.read().decode("utf-8"))
+        response.raise_for_status()
+        data = response.json()
         return data.get("aggregated", {})
     except Exception as exc:
         print(f"   ⚠️  Could not fetch aggregate feedback: {exc}")
@@ -518,19 +508,14 @@ def make_student_digest_config(base_config: dict[str, Any], subscription: dict[s
     # Falls back to plain email URL if STUDENT_TOKEN_SECRET is not set.
     if STUDENT_TOKEN_SECRET:
         settings_token = _generate_settings_token(email, STUDENT_TOKEN_SECRET)
-        settings_params = {"action": "settings", "token": settings_token}
-        config["subscription_manage_url"] = (
-            f"{STUDENT_MANAGE_URL}?{urllib.parse.urlencode(settings_params)}"
-        )
+        req = requests.Request('GET', STUDENT_MANAGE_URL, params={"action": "settings", "token": settings_token}).prepare()
+        config["subscription_manage_url"] = req.url
     else:
-        manage_params = {"email": email}
-        config["subscription_manage_url"] = (
-            f"{STUDENT_MANAGE_URL}?{urllib.parse.urlencode(manage_params)}"
-        )
-    unsub_params = {"email": email, "mode": "unsubscribe"}
-    config["subscription_unsubscribe_url"] = (
-        f"{STUDENT_MANAGE_URL}?{urllib.parse.urlencode(unsub_params)}"
-    )
+        req = requests.Request('GET', STUDENT_MANAGE_URL, params={"email": email}).prepare()
+        config["subscription_manage_url"] = req.url
+
+    req = requests.Request('GET', STUDENT_MANAGE_URL, params={"email": email, "mode": "unsubscribe"}).prepare()
+    config["subscription_unsubscribe_url"] = req.url
     labels = [package_labels()[package_id] for package_id in subscription["package_ids"]]
     config["tagline"] = "Your categories: " + ", ".join(labels)
     # First digest gets a welcome header; subsequent ones do not
@@ -567,14 +552,15 @@ def main(argv: list[str] | None = None) -> int:
     base_config = build_student_base_config()
     try:
         subscriptions = fetch_student_subscriptions()
-    except urllib.error.HTTPError as exc:
-        if exc.code in (401, 403):
-            print(f"\n❌ Student registry auth failed (HTTP {exc.code}). Check STUDENT_ADMIN_TOKEN.")
+    except requests.exceptions.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code in (401, 403):
+            print(f"\n❌ Student registry auth failed (HTTP {exc.response.status_code}). Check STUDENT_ADMIN_TOKEN.")
         else:
-            print(f"\n❌ Student registry returned HTTP {exc.code}.")
+            code = exc.response.status_code if exc.response is not None else "Unknown"
+            print(f"\n❌ Student registry returned HTTP {code}.")
         return 1
-    except urllib.error.URLError as exc:
-        print(f"\n❌ Could not reach student registry: {exc.reason}")
+    except requests.exceptions.RequestException as exc:
+        print(f"\n❌ Could not reach student registry: {exc}")
         return 1
     except RuntimeError as exc:
         print(f"\n❌ {exc}")

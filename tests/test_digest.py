@@ -650,6 +650,36 @@ class TestBuildScoringPrompt:
 
 
 # ─────────────────────────────────────────────────────────────
+#  load_keyword_stats (isolated)
+# ─────────────────────────────────────────────────────────────
+
+class TestLoadKeywordStats:
+    def test_file_does_not_exist(self, tmp_path):
+        with patch.object(d, "STATS_PATH", tmp_path / "nonexistent.json"):
+            assert load_keyword_stats() == {}
+
+    def test_valid_json(self, tmp_path):
+        stats_file = tmp_path / "keyword_stats.json"
+        stats_file.write_text(json.dumps({"stellar rotation": {"total_hits": 5}}))
+        with patch.object(d, "STATS_PATH", stats_file):
+            assert load_keyword_stats() == {"stellar rotation": {"total_hits": 5}}
+
+    def test_corrupted_json(self, tmp_path, capsys):
+        stats_file = tmp_path / "keyword_stats.json"
+        stats_file.write_text("{corrupted json}")
+        with patch.object(d, "STATS_PATH", stats_file):
+            assert load_keyword_stats() == {}
+        assert "corrupted" in capsys.readouterr().out
+
+    def test_ioerror(self, tmp_path):
+        stats_file = tmp_path / "keyword_stats.json"
+        stats_file.touch()  # Make it exist so it passes .exists() check
+        with patch.object(d, "STATS_PATH", stats_file):
+            with patch("builtins.open", side_effect=OSError("Permission denied")):
+                assert load_keyword_stats() == {}
+
+
+# ─────────────────────────────────────────────────────────────
 #  update_keyword_stats (isolated — no disk side effects)
 # ─────────────────────────────────────────────────────────────
 
@@ -1419,7 +1449,7 @@ class TestFetchArxivXmlParsing:
         """
         import inspect
 
-        source = inspect.getsource(d.fetch_arxiv_papers)
+        source = inspect.getsource(d._parse_arxiv_response)
         assert "except (AttributeError, TypeError, ValueError)" in source
 
     def test_deduplication_logic(self):

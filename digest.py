@@ -24,6 +24,7 @@ import urllib.request
 import urllib.parse
 import webbrowser
 import xml.etree.ElementTree as ET
+import functools
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -263,11 +264,12 @@ def _normalise_colleague_people(people: Any) -> list[dict[str, Any]]:
     return normalised
 
 
-def _keyword_token_forms(token: str) -> set[str]:
+@functools.lru_cache(maxsize=1024)
+def _keyword_token_forms(token: str) -> frozenset[str]:
     """Return lightweight lexical variants for fuzzy keyword matching."""
     clean = re.sub(r"[^a-z0-9]+", "", token.lower())
     if not clean:
-        return set()
+        return frozenset()
     forms = {clean}
     if len(clean) >= 6 and clean.endswith("ies"):
         forms.add(clean[:-3] + "y")
@@ -279,7 +281,7 @@ def _keyword_token_forms(token: str) -> set[str]:
         forms.add(clean[:-1])
     if len(clean) >= 7 and clean.endswith("ary"):
         forms.add(clean[:-3])
-    return {form for form in forms if len(form) >= 3}
+    return frozenset(form for form in forms if len(form) >= 3)
 
 
 def _tokenise_for_keyword_match(text: str) -> list[str]:

@@ -1372,7 +1372,7 @@ def analyse_papers(papers: list[dict[str, Any]], config: dict[str, Any]) -> tupl
 from brand import (PINE, GOLD, UMBER, ASH_WHITE, ASH_BLACK,
                    CARD_BORDER, WARM_GREY, PINE_WASH, PINE_LIGHT, GOLD_LIGHT,
                    GOLD_WASH, ALERT_RED, ALERT_RED_WASH, CATALOG_PURPLE, CATALOG_WASH,
-                   CREAM, WARM_WHITE, FOOTER_BG, SOFT_GREY, TERRACOTTA, GREEN_HAND,
+                   WARM_WHITE, FOOTER_BG, SOFT_GREY, GREEN_HAND,
                    FONT_HEADING, FONT_BODY, FONT_MONO)
 from setup.data import AU_STUDENT_TRACK_LABELS, DELIGHT_KEYWORDS
 

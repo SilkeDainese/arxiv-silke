@@ -16,8 +16,6 @@ optional manual fallback.
 All functions are fault-tolerant and return empty results on failure rather than raising.
 """
 
-from __future__ import annotations
-
 import re
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed

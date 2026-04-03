@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import json
 import sys
-import urllib.error
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 import yaml
 
 # Add setup/ to sys.path so `from server import app` works, and so server.py
@@ -334,17 +334,20 @@ class TestInviteValidate:
 
 class TestStudentsRegister:
     def _make_relay_response(self, body: dict, status: int = 200):
-        """Return a mock for urllib.request.urlopen that yields a JSON response."""
+        """Return a mock for requests.post that yields a JSON response."""
         mock_resp = MagicMock()
-        mock_resp.read.return_value = json.dumps(body).encode()
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_resp.status_code = status
+        mock_resp.json.return_value = body
+        mock_resp.text = json.dumps(body)
+        if status >= 400:
+            err = requests.exceptions.HTTPError(response=mock_resp)
+            mock_resp.raise_for_status.side_effect = err
         return mock_resp
 
     def test_valid_au_email_forwarded_to_relay(self, client):
         relay_body = {"ok": True, "subscription": {"email": "au123456@uni.au.dk"}}
         mock_resp = self._make_relay_response(relay_body)
-        with patch("urllib.request.urlopen", return_value=mock_resp):
+        with patch("requests.post", return_value=mock_resp):
             resp = client.post(
                 "/api/students/register",
                 json={
@@ -390,8 +393,8 @@ class TestStudentsRegister:
 
     def test_relay_unreachable_returns_502(self, client):
         with patch(
-            "urllib.request.urlopen",
-            side_effect=urllib.error.URLError("Connection refused"),
+            "requests.post",
+            side_effect=requests.exceptions.ConnectionError("Connection refused"),
         ):
             resp = client.post(
                 "/api/students/register",
@@ -405,13 +408,9 @@ class TestStudentsRegister:
         assert "relay" in resp.get_json()["error"].lower()
 
     def test_relay_error_response_forwarded(self, client):
-        error_resp = MagicMock()
-        error_resp.read.return_value = json.dumps({"error": "Student not found"}).encode()
-        http_err = urllib.error.HTTPError(
-            url="", code=404, msg="Not Found", hdrs={}, fp=BytesIO(b'{"error":"Student not found"}')
-        )
-        http_err.read = lambda: json.dumps({"error": "Student not found"}).encode()
-        with patch("urllib.request.urlopen", side_effect=http_err):
+        relay_body = {"error": "Student not found"}
+        mock_resp = self._make_relay_response(relay_body, status=404)
+        with patch("requests.post", return_value=mock_resp):
             resp = client.post(
                 "/api/students/register",
                 json={

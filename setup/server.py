@@ -14,11 +14,9 @@ import json
 import os
 import re
 import sys
-import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 
+import requests
 import yaml
 from flask import Flask, jsonify, render_template_string, request, send_from_directory
 
@@ -767,26 +765,23 @@ def students_register():
         "max_papers_per_week": int(max_papers),
     }
 
-    req = urllib.request.Request(
-        DEFAULT_STUDENT_MANAGE_URL,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
-            result = json.loads(response.read().decode("utf-8"))
-            return jsonify(result)
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="ignore")
+        response = requests.post(
+            DEFAULT_STUDENT_MANAGE_URL,
+            json=payload,
+            timeout=30,
+        )
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.exceptions.HTTPError as exc:
         try:
-            error_payload = json.loads(body)
-        except json.JSONDecodeError:
+            error_payload = exc.response.json()
+        except (ValueError, AttributeError):
             error_payload = {}
-        message = str(error_payload.get("error") or body or exc.reason)
-        return jsonify({"ok": False, "error": message}), exc.code
-    except urllib.error.URLError as exc:
-        return jsonify({"ok": False, "error": f"Could not reach relay: {exc.reason}"}), 502
+        message = str(error_payload.get("error") or exc.response.text or str(exc))
+        return jsonify({"ok": False, "error": message}), exc.response.status_code
+    except requests.exceptions.RequestException as exc:
+        return jsonify({"ok": False, "error": f"Could not reach relay: {exc}"}), 502
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Registration failed: {exc}"}), 500
 

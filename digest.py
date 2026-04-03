@@ -592,6 +592,20 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
     Returns:
         Deduplicated list of paper dicts with metadata and normalised keyword scores.
     """
+    # Pre-compile colleague patterns for faster matching
+    compiled_colleagues = []
+    for colleague in config.get("colleagues", {}).get("people", []):
+        patterns = colleague.get("match", [])
+        if patterns:
+            escaped_patterns = [re.escape(p) for p in patterns if p]
+            if escaped_patterns:
+                regex = re.compile("|".join(escaped_patterns), re.IGNORECASE)
+                compiled_colleagues.append({
+                    "regex": regex,
+                    "name": colleague.get("name", "Unknown"),
+                    "note": str(colleague.get("note", "")).strip()
+                })
+
     papers = []
     for i, category in enumerate(config["categories"]):
         if i > 0:
@@ -673,27 +687,30 @@ def fetch_arxiv_papers(config: dict[str, Any]) -> list[dict[str, Any]]:
             # Check colleagues — people matches
             colleague_flag = []
             colleague_details: list[dict[str, str]] = []
-            for author in authors:
-                for colleague in config["colleagues"]["people"]:
-                    for pattern in colleague.get("match", []):
-                        if pattern.lower() in author.lower():
-                            colleague_name = colleague.get("name", "Unknown")
-                            if colleague_name not in colleague_flag:
-                                colleague_flag.append(colleague_name)
-                            detail = {"name": colleague_name}
-                            note = str(colleague.get("note", "")).strip()
-                            if note and not any(
-                                existing.get("name") == colleague_name
-                                for existing in colleague_details
-                            ):
-                                detail["note"] = note
-                                colleague_details.append(detail)
-                            elif not note and not any(
-                                existing.get("name") == colleague_name
-                                for existing in colleague_details
-                            ):
-                                colleague_details.append(detail)
-                            break
+
+            if compiled_colleagues and authors:
+                # Combine authors into a single string for faster searching
+                authors_text = "\n".join(authors)
+                for cc in compiled_colleagues:
+                    if cc["regex"].search(authors_text):
+                        colleague_name = cc["name"]
+
+                        if colleague_name not in colleague_flag:
+                            colleague_flag.append(colleague_name)
+
+                        detail = {"name": colleague_name}
+                        note = cc["note"]
+                        if note and not any(
+                            existing.get("name") == colleague_name
+                            for existing in colleague_details
+                        ):
+                            detail["note"] = note
+                            colleague_details.append(detail)
+                        elif not note and not any(
+                            existing.get("name") == colleague_name
+                            for existing in colleague_details
+                        ):
+                            colleague_details.append(detail)
 
             # Check colleagues — institutional matches (arXiv affiliation XML + abstract fallback)
             affiliations = []

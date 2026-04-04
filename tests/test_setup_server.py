@@ -482,3 +482,24 @@ class TestErrorHandlers:
         finally:
             _crash_route_behaviour["raise"] = False
             server.app.config["TESTING"] = True
+
+    def test_error_page_security_escaping(self, client):
+        """Verify that malicious input in error pages is escaped (no SSTI/XSS)."""
+        from server import _error_page
+        with server.app.test_request_context():
+            malicious_title = "<script>alert(1)</script>"
+            malicious_message = "{{ 7*7 }}"
+            malicious_tip = "{% if True %}Exploit{% endif %}"
+
+            html_content, code = _error_page(
+                500, malicious_title, malicious_message, [malicious_tip]
+            )
+
+            # XSS Check: Title should be escaped
+            assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html_content
+            assert "<script>alert(1)</script>" not in html_content
+
+            # SSTI Check: Message and Tips should be rendered literally
+            assert "{{ 7*7 }}" in html_content
+            assert "49" not in html_content
+            assert "{% if True %}Exploit{% endif %}" in html_content

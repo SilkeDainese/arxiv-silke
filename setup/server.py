@@ -20,7 +20,7 @@ import urllib.request
 from pathlib import Path
 
 import yaml
-from flask import Flask, jsonify, render_template_string, request, send_from_directory
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 # Allow imports from the project root (one level up from setup/)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -60,72 +60,9 @@ except Exception:
 
 app = Flask(__name__, static_folder=None)
 
-# ─────────────────────────────────────────────────────────────
-#  Branded error page template (inline, no external deps)
-# ─────────────────────────────────────────────────────────────
-
-_ERROR_PAGE = """<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>arXiv Digest Setup — {{ title }}</title>
-<style>
-  body { margin:0; font-family:'IBM Plex Sans',-apple-system,sans-serif;
-         background:#F6F5F2; color:#2B2B2B; min-height:100vh;
-         display:flex; flex-direction:column; }
-  header { background:#2F4F3E; border-bottom:3px solid #EBC944;
-           padding:14px 32px; }
-  header h1 { margin:0; font-family:Georgia,serif; color:white;
-              font-size:22px; font-weight:normal; }
-  header p  { margin:2px 0 0; font-size:10px; color:rgba(255,255,255,0.5);
-              text-transform:uppercase; letter-spacing:.1em; }
-  main { flex:1; display:flex; align-items:center; justify-content:center;
-         padding:40px 20px; }
-  .card { background:white; border:1px solid #D8D6D0; border-radius:10px;
-          padding:36px 40px; max-width:480px; width:100%; }
-  .code { font-size:48px; font-weight:700; color:#2F4F3E;
-          font-family:Georgia,serif; line-height:1; margin-bottom:8px; }
-  h2 { margin:0 0 12px; font-size:20px; font-family:Georgia,serif;
-       font-weight:normal; color:#2B2B2B; }
-  p  { margin:0 0 8px; font-size:14px; color:#6A6A66; line-height:1.6; }
-  .suggestions { margin:20px 0 0; padding:16px; background:#EDF2EF;
-                 border-radius:6px; }
-  .suggestions p { margin:0; font-size:13px; color:#2F4F3E; }
-  .suggestions ul { margin:8px 0 0; padding-left:20px;
-                    font-size:13px; color:#3D6B52; line-height:1.8; }
-  .back { display:inline-block; margin-top:24px; padding:10px 20px;
-          background:#2F4F3E; color:white; border-radius:6px;
-          text-decoration:none; font-size:13px; }
-  .back:hover { background:#3D6B52; }
-</style>
-</head>
-<body>
-<header>
-  <h1>arXiv Digest Setup</h1>
-  <p>Built by Silke S. Dainese</p>
-</header>
-<main>
-  <div class="card">
-    <div class="code">{{ code }}</div>
-    <h2>{{ title }}</h2>
-    <p>{{ message }}</p>
-    <div class="suggestions">
-      <p>What you can try:</p>
-      <ul>
-        {% for tip in tips %}<li>{{ tip }}</li>{% endfor %}
-      </ul>
-    </div>
-    <a class="back" href="/">&#x2190; Back to setup</a>
-  </div>
-</main>
-</body>
-</html>"""
-
-
 def _error_page(code: int, title: str, message: str, tips: list[str]) -> tuple:
-    html = render_template_string(
-        _ERROR_PAGE, code=code, title=title, message=message, tips=tips
+    html = render_template(
+        "error.html", code=code, title=title, message=message, tips=tips
     )
     return html, code
 

@@ -503,4 +503,3 @@ class TestErrorHandlers:
             assert "{{ 7*7 }}" in html_content
             assert "49" not in html_content
             assert "{% if True %}Exploit{% endif %}" in html_content
-            assert "Exploit" not in html_content

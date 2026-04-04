@@ -17,6 +17,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -802,6 +803,7 @@ def students_register():
 #  Subscriber management helpers
 # ─────────────────────────────────────────────────────────────
 
+# Simple format check: non-whitespace local-part @ domain . TLD (≥2 chars).
 _EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
 
 
@@ -863,7 +865,6 @@ def subscribers_add():
     if any(s.get("email") == email for s in subs):
         return jsonify({"error": "Email already subscribed"}), 409
 
-    from datetime import datetime, timezone
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     record = {
         "email": email,
